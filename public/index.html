@@ -17,6 +17,7 @@
                 <input type="text" id="roomCode" placeholder="Enter Room Code">
                 <input type="text" id="playerName" placeholder="Enter Your Name">
                 <button id="joinButton">Join Game</button>
+                <div id="rulesButton">Rules</div>
             </div>
         </div>
         <div id="colorWarning" class="error-message"></div>
@@ -24,26 +25,54 @@
             <h2>Waiting for another player<span class="ellipsis"></span></h2>
         </div>
         <div id="gameContainer"></div>
+
+
         <div id="soundControls">
             <div class="volume-control">
-                <input type="range" id="soundVolumeSlider" class="volume-slider" min="0" max="100" value="100" orient="vertical">
-                <button id="soundVolumeButton" class="sound-button" aria-label="Adjust game sounds volume">
-                    <i class="fas fa-volume-up"></i>
-                </button>
+                <input type="range" id="musicVolumeSlider" class="volume-slider" min="0" max="100" value="100">
+                <button id="musicVolumeButton" class="sound-button"><i class="fas fa-music"></i></button>
             </div>
             <div class="volume-control">
-                <input type="range" id="musicVolumeSlider" class="volume-slider" min="0" max="100" value="100" orient="vertical">
-                <button id="musicVolumeButton" class="sound-button" aria-label="Adjust music volume">
-                    <i class="fas fa-music"></i>
-                </button>
+                <input type="range" id="soundVolumeSlider" class="volume-slider" min="0" max="100" value="100">
+                <button id="soundVolumeButton" class="sound-button"><i class="fas fa-volume-up"></i></button>
             </div>
         </div>
-    
+    </div>
+
+    <div id="rulesModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Game Rules</h2>
+            <p>
+                    <b>Gameplay Mechanics:</b>
+                    Players take turns moving their chips, which can move one space in any direction (vertically, horizontally, or diagonally) similar to a king in chess.
+                    A chip can only move to a space if it is not occupied by another chip.
+                    Players aim to line up all four of their chips either vertically or horizontally to win.
+</p>
+            <p>
+                <b>Chip Selection and Movement:</b>
+                On their turn, a player clicks on one of their chips to see potential moves, highlighted with semi-transparent circles.
+                Clicking on a highlighted potential move space moves the chip to that space.
+            </p>
+            <p>
+                <b>Chip Swapping Mechanic:</b>
+                If a chip is adjacent to two enemy chips vertically or horizontally, it can swap places with one of those enemy chips.
+                Swapping chips cannot be undone immediately; players cannot move back to the original position if it would undo a swap.
+            </p>
+            <p>
+                <b>Winning the Game:</b>
+                A player wins by lining up all four of their chips in a vertical or horizontal line.
+                Upon winning, a notification displays the winner, the game is reset, and the winner’s score is incremented.
+            </p>
+        </div>
+    </div>
+
+
     <audio id="backgroundMusic" loop>
         <source src="sounds/background-music.mp3" type="audio/mpeg">
         Your browser does not support the audio element.
     </audio>
-    </div>
+    
     <script src="/socket.io/socket.io.js"></script>
     <script src="iro.min.js"></script>
     <script type="module" src="logic.js"></script>
