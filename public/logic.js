@@ -1,9 +1,15 @@
-﻿import gameModule from './kingkung.js';
+import gameModule from './kingkung.js';
 
 let currentPlayer;
 let socket;
 let musicVolume = 1;
 let backgroundMusic;
+let musicVolume = localStorage.getItem('musicVolume') !== null 
+    ? parseFloat(localStorage.getItem('musicVolume')) 
+    : 1;
+let soundVolume = localStorage.getItem('soundVolume') !== null 
+    ? parseFloat(localStorage.getItem('soundVolume')) 
+    : 1;
 
 function initializeSocketConnection() {
     socket = io();
@@ -61,8 +67,7 @@ function initializeMusicControls() {
     musicVolumeButton.addEventListener('click', () => toggleVolumeSlider(musicVolumeSlider));
     musicVolumeSlider.addEventListener('input', updateMusicVolume);
 
-    // Initialize music volume based on slider position
-    musicVolume = musicVolumeSlider.value / 100;
+    musicVolumeSlider.value = musicVolume * 100;
     updateVolumeIcon(musicVolumeSlider, 'musicVolumeButton');
 
     if (backgroundMusic) {
@@ -90,11 +95,13 @@ function toggleVolumeSlider(slider) {
 
 function updateMusicVolume(e) {
     musicVolume = e.target.value / 100;
+    localStorage.setItem('musicVolume', musicVolume);
     updateVolumeIcon(e.target, 'musicVolumeButton');
     if (backgroundMusic) {
         backgroundMusic.volume = musicVolume;
     }
 }
+
 
 function updateVolumeIcon(slider, buttonId) {
     const button = document.getElementById(buttonId);
@@ -192,15 +199,19 @@ function showWinNotification(winner) {
 
     const playAgainButton = document.getElementById('playAgainButton');
     if (playAgainButton) {
+        // Set button color for both winner and loser
         playAgainButton.style.backgroundColor = winner.color;
         playAgainButton.style.color = getContrastColor(winner.color);
 
-        playAgainButton.addEventListener('click', () => {
+        // Ensure the button is clickable for both players
+        playAgainButton.addEventListener('click', function () {
             socket.emit('playAgain');
-            playAgainButton.disabled = true;
-            playAgainButton.textContent = 'Waiting for other player...';
+            this.disabled = true;
+            this.textContent = 'Waiting for other player...';
         });
     }
+    // Force a reflow to ensure styles are applied
+    notification.offsetHeight;
 }
 
 function getContrastColor(hexColor) {
@@ -230,11 +241,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     soundVolumeButton.addEventListener('click', () => toggleVolumeSlider(soundVolumeSlider));
 
+    soundVolumeSlider.value = soundVolume * 100;
+    updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton');
+
     soundVolumeSlider.addEventListener('input', (e) => {
         const volume = e.target.value / 100;
+        localStorage.setItem('soundVolume', volume);
         gameModule.updateSoundVolume(volume);
         updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton');
     });
+
+    function initializeSounds() {
+        const storedSoundVolume = localStorage.getItem('soundVolume');
+        soundVolume = storedSoundVolume !== null ? parseFloat(storedSoundVolume) : 1;
+        Object.values(sounds).forEach(sound => {
+            sound.volume = soundVolume;
+        });
+    }
 
     // Hide color warning when color is changed
     window.gameColorPicker.on('color:change', hideColorWarning);
