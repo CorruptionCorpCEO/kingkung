@@ -2,13 +2,12 @@ import gameModule from './kingkung.js';
 
 let currentPlayer;
 let socket;
-let musicVolume = 1;
 let backgroundMusic;
-let musicVolume = localStorage.getItem('musicVolume') !== null 
-    ? parseFloat(localStorage.getItem('musicVolume')) 
+let musicVolume = localStorage.getItem('musicVolume') !== null
+    ? parseFloat(localStorage.getItem('musicVolume'))
     : 1;
-let soundVolume = localStorage.getItem('soundVolume') !== null 
-    ? parseFloat(localStorage.getItem('soundVolume')) 
+let soundVolume = localStorage.getItem('soundVolume') !== null
+    ? parseFloat(localStorage.getItem('soundVolume'))
     : 1;
 
 function initializeSocketConnection() {
@@ -64,28 +63,23 @@ function initializeMusicControls() {
     const musicVolumeButton = document.getElementById('musicVolumeButton');
     const musicVolumeSlider = document.getElementById('musicVolumeSlider');
 
-    musicVolumeButton.addEventListener('click', () => toggleVolumeSlider(musicVolumeSlider));
-    musicVolumeSlider.addEventListener('input', updateMusicVolume);
-
-    musicVolumeSlider.value = musicVolume * 100;
-    updateVolumeIcon(musicVolumeSlider, 'musicVolumeButton');
-
     if (backgroundMusic) {
         backgroundMusic.volume = musicVolume;
-        backgroundMusic.addEventListener('error', (e) => {
-            console.error('Error loading background music:', e);
-            musicVolumeButton.disabled = true;
-            musicVolumeSlider.disabled = true;
-        });
+        musicVolumeSlider.value = musicVolume * 100;
+        updateVolumeIcon(musicVolumeSlider, 'musicVolumeButton');
 
-        // Use a promise to handle potential play() failures
-        const playPromise = backgroundMusic.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(error => {
-                console.error('Error playing background music:', error);
-                // You might want to inform the user or retry playing
-            });
-        }
+        musicVolumeButton.addEventListener('click', () => toggleVolumeSlider(musicVolumeSlider));
+        musicVolumeSlider.addEventListener('input', updateMusicVolume);
+
+        // Try to play the music
+        backgroundMusic.play().catch(error => {
+            console.error('Error playing background music:', error);
+            // Create a play button for user interaction
+            const playButton = document.createElement('button');
+            playButton.textContent = 'Play Music';
+            playButton.onclick = () => backgroundMusic.play();
+            document.body.appendChild(playButton);
+        });
     }
 }
 
@@ -102,7 +96,6 @@ function updateMusicVolume(e) {
     }
 }
 
-
 function updateVolumeIcon(slider, buttonId) {
     const button = document.getElementById(buttonId);
     const icon = button.querySelector('i');
@@ -112,10 +105,10 @@ function updateVolumeIcon(slider, buttonId) {
         icon.className = 'fas fa-volume-mute';
         button.classList.add('muted');
     } else if (volume < 50) {
-        icon.className = 'fas fa-music';
+        icon.className = 'fas fa-volume-down';
         button.classList.remove('muted');
     } else {
-        icon.className = 'fas fa-music';
+        icon.className = 'fas fa-volume-up';
         button.classList.remove('muted');
     }
 }
@@ -141,20 +134,24 @@ function initializeColorPicker() {
 
 function initializeJoinButton() {
     const joinButton = document.getElementById('joinButton');
-    joinButton.addEventListener('click', validateAndJoin);
+    if (joinButton) {
+        joinButton.addEventListener('click', validateAndJoin);
+    } else {
+        console.error('Join button not found in the DOM');
+    }
 }
 
 function validateAndJoin() {
     const roomCode = document.getElementById('roomCode').value;
     const playerName = document.getElementById('playerName').value;
-    const playerColor = window.gameColorPicker.color.hsl;
+    const playerColor = window.gameColorPicker.color.hexString;
 
     if (!roomCode || !playerName) {
         alert('Please enter both room code and player name.');
         return;
     }
 
-    socket.emit('validateColor', { roomCode, playerColor: playerColor.h });
+    socket.emit('validateColor', { roomCode, playerColor: window.gameColorPicker.color.hsl.h });
 }
 
 function joinRoom() {
@@ -199,17 +196,16 @@ function showWinNotification(winner) {
 
     const playAgainButton = document.getElementById('playAgainButton');
     if (playAgainButton) {
-        // Set button color for both winner and loser
         playAgainButton.style.backgroundColor = winner.color;
         playAgainButton.style.color = getContrastColor(winner.color);
 
-        // Ensure the button is clickable for both players
         playAgainButton.addEventListener('click', function () {
             socket.emit('playAgain');
             this.disabled = true;
             this.textContent = 'Waiting for other player...';
         });
     }
+
     // Force a reflow to ensure styles are applied
     notification.offsetHeight;
 }
@@ -239,31 +235,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const soundVolumeSlider = document.getElementById('soundVolumeSlider');
     const soundVolumeButton = document.getElementById('soundVolumeButton');
 
-    soundVolumeButton.addEventListener('click', () => toggleVolumeSlider(soundVolumeSlider));
-
-    soundVolumeSlider.value = soundVolume * 100;
-    updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton');
-
-    soundVolumeSlider.addEventListener('input', (e) => {
-        const volume = e.target.value / 100;
-        localStorage.setItem('soundVolume', volume);
-        gameModule.updateSoundVolume(volume);
+    if (soundVolumeSlider && soundVolumeButton) {
+        soundVolumeSlider.value = soundVolume * 100;
         updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton');
-    });
 
-    function initializeSounds() {
-        const storedSoundVolume = localStorage.getItem('soundVolume');
-        soundVolume = storedSoundVolume !== null ? parseFloat(storedSoundVolume) : 1;
-        Object.values(sounds).forEach(sound => {
-            sound.volume = soundVolume;
+        soundVolumeButton.addEventListener('click', () => toggleVolumeSlider(soundVolumeSlider));
+
+        soundVolumeSlider.addEventListener('input', (e) => {
+            const volume = e.target.value / 100;
+            localStorage.setItem('soundVolume', volume);
+            gameModule.updateSoundVolume(volume);
+            updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton');
         });
     }
 
     // Hide color warning when color is changed
-    window.gameColorPicker.on('color:change', hideColorWarning);
+    if (window.gameColorPicker) {
+        window.gameColorPicker.on('color:change', hideColorWarning);
+    }
 
     // Listen for the custom gameWon event
     document.addEventListener('gameWon', (event) => {
         showWinNotification(event.detail);
     });
 });
+
+export default {
+    updateSoundVolume: (volume) => {
+        soundVolume = volume;
+        // Update game sound volume here if needed
+    }
+};
