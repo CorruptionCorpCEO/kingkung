@@ -141,6 +141,54 @@ button {
     max-width: 100%;
 }
 
+#rulesButton {
+    background-color: #808080;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    display: inline-block;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: rgba(0,0,0,0.8);
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    color: white;
+    position: relative;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+    .close:hover,
+    .close:focus {
+        color: #fff;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
 #soundControls {
     position: fixed;
     bottom: 20px;
@@ -242,7 +290,6 @@ button {
     .game-chip::before,
     .game-chip::after {
         content: '';
-        
         position: absolute;
         top: 50%;
         left: 50%;
@@ -255,7 +302,6 @@ button {
         width: calc(100% + 12px);
         height: calc(100% + 12px);
         border: 12px solid black;
-       
     }
 
     .game-chip::after {
