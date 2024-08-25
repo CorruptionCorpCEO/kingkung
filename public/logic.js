@@ -231,11 +231,32 @@ function hideWinNotification() {
     }
 }
 
+function initializeRulesModal() {
+    const rulesButton = document.getElementById('rulesButton');
+    const rulesModal = document.getElementById('rulesModal');
+    const closeBtn = rulesModal.querySelector('.close');
+
+    rulesButton.addEventListener('click', () => {
+        rulesModal.style.display = 'block';
+    });
+
+    closeBtn.addEventListener('click', () => {
+        rulesModal.style.display = 'none';
+    });
+
+    window.addEventListener('click', (event) => {
+        if (event.target === rulesModal) {
+            rulesModal.style.display = 'none';
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initializeSocketConnection();
     initializeColorPicker();
     initializeJoinButton();
     initializeMusicControls();
+    initializeRulesModal();
 
     // Set up sound volume control for game sounds
     const soundVolumeSlider = document.getElementById('soundVolumeSlider');
