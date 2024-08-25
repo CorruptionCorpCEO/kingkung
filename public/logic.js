@@ -71,14 +71,20 @@ function initializeMusicControls() {
         musicVolumeButton.addEventListener('click', () => toggleVolumeSlider(musicVolumeSlider));
         musicVolumeSlider.addEventListener('input', updateMusicVolume);
 
-        // Try to play the music
+        // Try to play the music without creating a fallback button
         backgroundMusic.play().catch(error => {
             console.error('Error playing background music:', error);
-            // Create a play button for user interaction
-            const playButton = document.createElement('button');
-            playButton.textContent = 'Play Music';
-            playButton.onclick = () => backgroundMusic.play();
-            document.body.appendChild(playButton);
+            // We're not creating a play button anymore, but you might want to 
+            // implement an alternative method to start the music, such as 
+            // starting it on the first user interaction with the page.
+        });
+    }
+}
+
+function startBackgroundMusic() {
+    if (backgroundMusic && backgroundMusic.paused) {
+        backgroundMusic.play().catch(error => {
+            console.error('Error playing background music:', error);
         });
     }
 }
@@ -234,6 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Set up sound volume control for game sounds
     const soundVolumeSlider = document.getElementById('soundVolumeSlider');
     const soundVolumeButton = document.getElementById('soundVolumeButton');
+    document.addEventListener('click', startBackgroundMusic, { once: true });
 
     if (soundVolumeSlider && soundVolumeButton) {
         soundVolumeSlider.value = soundVolume * 100;
