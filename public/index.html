@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>King Kung</title>
+    <link rel="icon" type="image/png" href="kingkungfavicon.png" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="gameWrapper">
+        <div id="mainMenu" class="container">
+            <div class="join-form">
+                <img id="kingkungmain" src="assets/kingkungmain.gif" alt="King Kung Main">
+                <div id="colorPicker"></div>
+                <input type="text" id="roomCode" placeholder="Enter Room Code">
+                <input type="text" id="playerName" placeholder="Enter Your Name">
+                <button id="joinButton">Join Game</button>
+            </div>
+        </div>
+        <div id="colorWarning" class="error-message"></div>
+        <div id="waitingMessage" class="container" style="display: none;">
+            <h2>Waiting for another player<span class="ellipsis"></span></h2>
+        </div>
+        <div id="gameContainer"></div>
+        <div id="soundControls">
+            <div class="volume-control">
+                <input type="range" id="soundVolumeSlider" class="volume-slider" min="0" max="100" value="100" orient="vertical">
+                <button id="soundVolumeButton" class="sound-button" aria-label="Adjust game sounds volume">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+            </div>
+            <div class="volume-control">
+                <input type="range" id="musicVolumeSlider" class="volume-slider" min="0" max="100" value="100" orient="vertical">
+                <button id="musicVolumeButton" class="sound-button" aria-label="Adjust music volume">
+                    <i class="fas fa-music"></i>
+                </button>
+            </div>
+        </div>
+    
+    <audio id="backgroundMusic" loop>
+        <source src="sounds/background-music.mp3" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="iro.min.js"></script>
+    <script type="module" src="logic.js"></script>
+</body>
+</html>

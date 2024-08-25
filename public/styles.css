@@ -1,0 +1,398 @@
+:root {
+    --main-bg-color: #1a1a1a;
+    --text-color: #fff;
+    --input-bg-color: rgba(255, 255, 255, 0.1);
+    --button-bg-color: #007bff;
+    --button-hover-color: #0056b3;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: var(--main-bg-color);
+    background-image: url('assets/background-tile.png');
+    background-repeat: repeat;
+    background-size: 2em;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    color: var(--text-color);
+}
+
+#gameWrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 900px;
+    padding: 1rem;
+    box-sizing: border-box;
+}
+
+.container {
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    border-radius: 10px;
+    text-align: center;
+    box-sizing: border-box;
+    margin: 0 auto;
+}
+
+#mainMenu, #waitingMessage {
+    background-color: transparent;
+}
+
+#gameContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.player-display {
+    flex: 0 0 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 600px;
+}
+
+#gameBoard {
+    flex: 0 0 600px;
+    border: 1em solid black;
+    width: 600px;
+    height: 600px;
+    margin: 0;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+h2 {
+    font-size: 1.8rem;
+    margin-bottom: 1rem;
+}
+
+.join-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: center;
+}
+
+input {
+    padding: 0.5rem;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: var(--input-bg-color);
+    color: var(--text-color);
+    width: 100%;
+    max-width: 300px;
+    box-sizing: border-box;
+}
+
+#colorPicker {
+    margin: 0 auto 1rem;
+    max-width: 100%;
+}
+
+button {
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    background-color: var(--button-bg-color);
+    color: var(--text-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    width: 100%;
+    max-width: 300px;
+}
+
+    button:hover {
+        background-color: var(--button-hover-color);
+    }
+
+.error-message {
+    position: absolute;
+    bottom: 4em;
+    left: 0;
+    right: 0;
+    color: red;
+    font-size: 0.9rem;
+    text-align: center;
+    display: none;
+}
+
+#kingkungmain {
+    width: 30em;
+    max-width: 100%;
+}
+
+#soundControls {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.volume-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.volume-slider {
+    -webkit-appearance: slider-vertical;
+    width: 8px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.3);
+    outline: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+    margin-bottom: 10px;
+}
+
+    .volume-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        background: white;
+        cursor: pointer;
+        border-radius: 50%;
+    }
+
+    .volume-slider::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        background: white;
+        cursor: pointer;
+        border-radius: 50%;
+    }
+
+.sound-button {
+    background-color: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+    .sound-button:hover {
+        background-color: rgba(0, 0, 0, 0.7);
+    }
+
+    .sound-button i {
+        color: white;
+        font-size: 20px;
+    }
+
+    .sound-button.muted i.fa-volume-up::before {
+        content: "\f6a9"; /* Font Awesome icon for volume mute */
+    }
+
+    .sound-button.muted i.fa-music::before {
+        content: "\f1b1"; /* Font Awesome icon for music mute (corrected) */
+    }
+
+.game-cell {
+    aspect-ratio: 1 / 1;
+    cursor: pointer;
+    border: outset;
+    background-color: lightgray;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.game-chip {
+    width: 70%;
+    height: 70%;
+    border-radius: 50%;
+    position: absolute;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(0, 0, 0, 0.3) 50%);
+    box-shadow: inset 0 5px 8px rgba(0, 0, 0, 0.4), inset 0 -5px 8px rgba(0, 0, 0, 0.4), 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+    .game-chip::before,
+    .game-chip::after {
+        content: '';
+        
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        box-sizing: border-box;
+    }
+
+    .game-chip::before {
+        width: calc(100% + 12px);
+        height: calc(100% + 12px);
+        border: 12px solid black;
+       
+    }
+
+    .game-chip::after {
+        width: calc(100% + 24px);
+        height: calc(100% + 24px);
+        border: 8px solid transparent;
+        transition: border-color 0.3s ease;
+    }
+
+    .game-chip.selectable::after {
+        border-color: inherit;
+    }
+
+.potential-move {
+    width: 35%;
+    height: 35%;
+    border: 6px solid black;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.5;
+    transition: transform 0.2s ease;
+    box-sizing: border-box;
+}
+
+    .potential-move:hover {
+        transform: translate(-50%, -50%) scale(1.2);
+    }
+
+.win-notification {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+    .win-notification h2 {
+        font-size: 2.5rem;
+        color: #fff;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+
+#playAgainButton {
+    padding: 10px 20px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s, transform 0.1s;
+}
+
+    #playAgainButton:hover {
+        transform: scale(1.05);
+    }
+
+    #playAgainButton:active {
+        transform: scale(0.95);
+    }
+
+.player-name, .player-score {
+    font-size: 4rem;
+    font-weight: bold;
+    /* The color will be set inline by JavaScript */
+    text-shadow:
+    /* Black outline */
+    -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 -2px 0 #000, 0 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000,
+    /* 3D effect */
+    0 3px 0 rgba(0,0,0,0.3), 0 4px 0 rgba(0,0,0,0.2), 0 5px 0 rgba(0,0,0,0.1), 0 6px 1px rgba(0,0,0,.1), 0 0 5px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 0 3px 5px rgba(0,0,0,.2), 0 5px 10px rgba(0,0,0,.25), 0 10px 10px rgba(0,0,0,.2), 0 20px 20px rgba(0,0,0,.15);
+}
+
+.player-score {
+    margin-left: 5px;
+}
+
+/* Media Queries for Responsiveness */
+@media (max-width: 900px) {
+    h1 {
+        font-size: 2rem;
+    }
+
+    h2 {
+        font-size: 1.5rem;
+    }
+
+    .container {
+        padding: 1rem;
+    }
+
+    #gameContainer {
+        flex-direction: column;
+    }
+
+    .player-display {
+        flex: 0 0 auto;
+        height: auto;
+        margin-bottom: 10px;
+    }
+
+    #gameBoard {
+        flex: 0 0 auto;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1 / 1;
+    }
+
+    .player-name, .player-score {
+        font-size: 4rem;
+        text-shadow:
+        /* Black outline */
+        -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 -1px 0 #000, 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000,
+        /* 3D effect (slightly reduced for smaller screens) */
+        0 2px 0 rgba(0,0,0,0.3), 0 3px 0 rgba(0,0,0,0.2), 0 4px 1px rgba(0,0,0,.1), 0 0 3px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 0 3px 5px rgba(0,0,0,.2), 0 5px 10px rgba(0,0,0,.25);
+    }
+
+    .game-chip::before {
+        width: calc(100% + 8px);
+        height: calc(100% + 8px);
+        border: 8px solid black;
+    }
+
+    .game-chip::after {
+        width: calc(100% + 16px);
+        height: calc(100% + 16px);
+        border: 6px solid transparent;
+    }
+
+    .potential-move {
+        border: 4px solid black;
+    }
+}
