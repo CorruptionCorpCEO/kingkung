@@ -108,7 +108,7 @@ input {
     max-width: 100%;
 }
 
-button {
+#joinButton {
     padding: 0.5rem 1rem;
     font-size: 1rem;
     background-color: var(--button-bg-color);
@@ -121,7 +121,7 @@ button {
     max-width: 300px;
 }
 
-    button:hover {
+    #joinButton:hover {
         background-color: var(--button-hover-color);
     }
 
@@ -361,10 +361,13 @@ button {
     border: none;
     border-radius: 5px;
     transition: background-color 0.3s, transform 0.1s;
+    background-color: var(--button-bg-color);
+    color: var(--text-color);
 }
 
     #playAgainButton:hover {
         transform: scale(1.05);
+        background-color: var(--button-hover-color);
     }
 
     #playAgainButton:active {
