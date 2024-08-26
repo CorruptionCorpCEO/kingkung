@@ -131,7 +131,6 @@ io.on('connection', (socket) => {
 
             console.log(`Player ${playerRole} voted to play again`);
 
-            // Check if all players have voted to play again
             if (Object.values(room.gameState.playAgainVotes).every(vote => vote)) {
                 console.log('All players voted to play again. Resetting game.');
                 room.gameState = createInitialGameState();
@@ -203,9 +202,11 @@ function createInitialGameState() {
         potentialMoves: null,
         winner: null,
         playAgainVotes: { host: false, opp: false },
-        scores: { host: 0, opp: 0 }
+        scores: { host: 0, opp: 0 },
+        swappableChips: []
     };
     placeInitialChips(gameState);
+    updateSwappableChips(gameState);
     return gameState;
 }
 
@@ -245,7 +246,7 @@ function calculatePotentialMoves(gameState, row, col) {
     const sourceChip = gameState.board[row][col];
     if (!sourceChip) return potentialMoves;
 
-    const canSwapHere = canSwap(gameState, row, col);
+    const isSwappable = gameState.swappableChips.some(chip => chip.row === row && chip.col === col);
 
     directions.forEach(([dx, dy]) => {
         const newRow = (row + dx + 4) % 4;
@@ -253,7 +254,7 @@ function calculatePotentialMoves(gameState, row, col) {
         const targetChip = gameState.board[newRow][newCol];
 
         if (targetChip && targetChip.role !== sourceChip.role) {
-            if ((canSwapHere || canSwap(gameState, newRow, newCol)) && (dx === 0 || dy === 0)) {
+            if (isSwappable && (dx === 0 || dy === 0)) {
                 if (!isPreviousSwap(gameState, row, col, newRow, newCol)) {
                     potentialMoves.push({ row: newRow, col: newCol, isSwap: true });
                 }
@@ -325,7 +326,8 @@ function isValidMove(gameState, sourceRow, sourceCol, targetRow, targetCol, isSw
             return false;
         }
 
-        if (!canSwap(gameState, sourceRow, sourceCol) && !canSwap(gameState, targetRow, targetCol)) {
+        const isSourceSwappable = gameState.swappableChips.some(chip => chip.row === sourceRow && chip.col === sourceCol);
+        if (!isSourceSwappable) {
             return false;
         }
 
@@ -342,40 +344,6 @@ function isValidMove(gameState, sourceRow, sourceCol, targetRow, targetCol, isSw
     }
 
     return true;
-}
-
-function switchTurn(room) {
-    room.gameState.currentPlayer = room.players.find(p => p.role !== room.gameState.currentPlayer.role);
-    room.gameState.selectedChip = null;
-    room.gameState.potentialMoves = null;
-}
-
-function checkWinCondition(gameState, room) {
-    const directions = [
-        [[0, 1], [0, 2], [0, 3]],
-        [[1, 0], [2, 0], [3, 0]],
-        [[1, 1], [2, 2], [3, 3]],
-        [[1, -1], [2, -2], [3, -3]]
-    ];
-
-    for (let row = 0; row < 4; row++) {
-        for (let col = 0; col < 4; col++) {
-            const chip = gameState.board[row][col];
-            if (chip) {
-                for (const direction of directions) {
-                    if (direction.every(([dx, dy]) => {
-                        const newRow = (row + dx + 4) % 4;
-                        const newCol = (col + dy + 4) % 4;
-                        return gameState.board[newRow][newCol] && gameState.board[newRow][newCol].role === chip.role;
-                    })) {
-                        room.lastWinner = chip.role;
-                        return chip;
-                    }
-                }
-            }
-        }
-    }
-    return null;
 }
 
 function performMove(gameState, sourceRow, sourceCol, targetRow, targetCol, isSwap) {
@@ -396,6 +364,60 @@ function performMove(gameState, sourceRow, sourceCol, targetRow, targetCol, isSw
         gameState.board[sourceRow][sourceCol] = null;
         gameState.lastSwap = null;
     }
+
+    // Recalculate swappable chips
+    updateSwappableChips(gameState);
+}
+
+function updateSwappableChips(gameState) {
+    gameState.swappableChips = [];
+    for (let row = 0; row < 4; row++) {
+        for (let col = 0; col < 4; col++) {
+            if (canSwap(gameState, row, col)) {
+                gameState.swappableChips.push({ row, col });
+            }
+        }
+    }
+}
+
+function switchTurn(room) {
+    room.gameState.currentPlayer = room.players.find(p => p.role !== room.gameState.currentPlayer.role);
+    room.gameState.selectedChip = null;
+    room.gameState.potentialMoves = null;
+}
+
+function checkWinCondition(gameState, room) {
+    const winPatterns = [
+        // Horizontal wins
+        [[0, 0], [0, 1], [0, 2], [0, 3]],
+        [[1, 0], [1, 1], [1, 2], [1, 3]],
+        [[2, 0], [2, 1], [2, 2], [2, 3]],
+        [[3, 0], [3, 1], [3, 2], [3, 3]],
+        // Vertical wins
+        [[0, 0], [1, 0], [2, 0], [3, 0]],
+        [[0, 1], [1, 1], [2, 1], [3, 1]],
+        [[0, 2], [1, 2], [2, 2], [3, 2]],
+        [[0, 3], [1, 3], [2, 3], [3, 3]],
+        // Diagonal wins
+        [[0, 0], [1, 1], [2, 2], [3, 3]],
+        [[0, 3], [1, 2], [2, 1], [3, 0]]
+    ];
+
+    for (const pattern of winPatterns) {
+        const [a, b, c, d] = pattern;
+        const [rowA, colA] = a;
+        const chipA = gameState.board[rowA][colA];
+
+        if (chipA && pattern.every(([row, col]) =>
+            gameState.board[row][col] &&
+            gameState.board[row][col].role === chipA.role
+        )) {
+            room.lastWinner = chipA.role;
+            return chipA;
+        }
+    }
+
+    return null;
 }
 
 function determineStartingPlayer(room) {
