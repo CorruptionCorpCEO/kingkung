@@ -66,18 +66,40 @@ function initializeMusicControls() {
     if (backgroundMusic) {
         backgroundMusic.volume = musicVolume;
         musicVolumeSlider.value = musicVolume * 100;
-        updateVolumeIcon(musicVolumeSlider, 'musicVolumeButton');
+        updateVolumeIcon(musicVolumeSlider, 'musicVolumeButton', true);
 
         musicVolumeButton.addEventListener('click', () => toggleVolumeSlider(musicVolumeSlider));
         musicVolumeSlider.addEventListener('input', updateMusicVolume);
 
-        // Try to play the music without creating a fallback button
         backgroundMusic.play().catch(error => {
             console.error('Error playing background music:', error);
-            // We're not creating a play button anymore, but you might want to 
-            // implement an alternative method to start the music, such as 
-            // starting it on the first user interaction with the page.
         });
+    }
+}
+
+function updateMusicVolume(e) {
+    musicVolume = e.target.value / 100;
+    localStorage.setItem('musicVolume', musicVolume);
+    updateVolumeIcon(e.target, 'musicVolumeButton', true);
+    if (backgroundMusic) {
+        backgroundMusic.volume = musicVolume;
+    }
+}
+
+function updateVolumeIcon(slider, buttonId, isMusic = false) {
+    const button = document.getElementById(buttonId);
+    const icon = button.querySelector('i');
+    const volume = slider.value;
+
+    if (volume == 0) {
+        icon.className = isMusic ? 'fas fa-music-slash' : 'fas fa-volume-mute';
+        button.classList.add('muted');
+    } else if (volume < 50) {
+        icon.className = isMusic ? 'fas fa-music' : 'fas fa-volume-down';
+        button.classList.remove('muted');
+    } else {
+        icon.className = isMusic ? 'fas fa-music' : 'fas fa-volume-up';
+        button.classList.remove('muted');
     }
 }
 
@@ -93,31 +115,9 @@ function toggleVolumeSlider(slider) {
     slider.style.opacity = slider.style.opacity === '1' ? '0' : '1';
 }
 
-function updateMusicVolume(e) {
-    musicVolume = e.target.value / 100;
-    localStorage.setItem('musicVolume', musicVolume);
-    updateVolumeIcon(e.target, 'musicVolumeButton');
-    if (backgroundMusic) {
-        backgroundMusic.volume = musicVolume;
-    }
-}
 
-function updateVolumeIcon(slider, buttonId) {
-    const button = document.getElementById(buttonId);
-    const icon = button.querySelector('i');
-    const volume = slider.value;
 
-    if (volume == 0) {
-        icon.className = 'fas fa-volume-mute';
-        button.classList.add('muted');
-    } else if (volume < 50) {
-        icon.className = 'fas fa-volume-down';
-        button.classList.remove('muted');
-    } else {
-        icon.className = 'fas fa-volume-up';
-        button.classList.remove('muted');
-    }
-}
+
 
 function initializeColorPicker() {
     const colorPicker = new iro.ColorPicker("#colorPicker", {
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (soundVolumeSlider && soundVolumeButton) {
         soundVolumeSlider.value = soundVolume * 100;
-        updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton');
+        updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton', false);
 
         soundVolumeButton.addEventListener('click', () => toggleVolumeSlider(soundVolumeSlider));
 
@@ -273,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const volume = e.target.value / 100;
             localStorage.setItem('soundVolume', volume);
             gameModule.updateSoundVolume(volume);
-            updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton');
+            updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton', false);
         });
     }
 
