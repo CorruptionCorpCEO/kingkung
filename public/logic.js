@@ -122,12 +122,18 @@ function updateVolume(type) {
 function updateVolumeIcon(type, volume) {
     const icon = document.getElementById(`${type}Icon`);
     if (icon) {
-        if (volume === 0) {
-            icon.className = type === 'music' ? 'fas fa-volume-mute' : 'fas fa-volume-mute';
-        } else if (volume < 0.5) {
-            icon.className = type === 'music' ? 'fas fa-music' : 'fas fa-volume-down';
+        if (type === 'music') {
+            // Always use the music icon for music, just toggle the mute state
+            icon.className = volume === 0 ? 'fas fa-volume-mute' : 'fas fa-music';
         } else {
-            icon.className = type === 'music' ? 'fas fa-music' : 'fas fa-volume-up';
+            // For sound effects, use different icons based on volume
+            if (volume === 0) {
+                icon.className = 'fas fa-volume-mute';
+            } else if (volume < 0.5) {
+                icon.className = 'fas fa-volume-down';
+            } else {
+                icon.className = 'fas fa-volume-up';
+            }
         }
     }
 }
@@ -135,6 +141,29 @@ function updateVolumeIcon(type, volume) {
 function toggleVolumeControl(type) {
     const volumeControl = document.querySelector(`.volume-control:${type === 'music' ? 'first-child' : 'last-child'}`);
     volumeControl.classList.toggle('expanded');
+}
+
+function initializeColorPicker() {
+    const colorPicker = new iro.ColorPicker("#colorPicker", {
+        width: 200,
+        color: "hsl(0, 100%, 50%)",
+        borderWidth: 1,
+        borderColor: "#ccc",
+        layout: [
+            {
+                component: iro.ui.Slider,
+                options: {
+                    sliderType: 'hue'
+                }
+            }
+        ]
+    });
+
+    window.gameColorPicker = colorPicker;
+
+    // Ensure volume icons are correct after color picker initialization
+    updateVolumeIcon('music', musicVolume);
+    updateVolumeIcon('sound', soundVolume);
 }
 
 function cycleVolume(type) {
@@ -160,24 +189,7 @@ function cycleVolume(type) {
 
 
 
-function initializeColorPicker() {
-    const colorPicker = new iro.ColorPicker("#colorPicker", {
-        width: 200,
-        color: "hsl(0, 100%, 50%)",
-        borderWidth: 1,
-        borderColor: "#ccc",
-        layout: [
-            {
-                component: iro.ui.Slider,
-                options: {
-                    sliderType: 'hue'
-                }
-            }
-        ]
-    });
 
-    window.gameColorPicker = colorPicker;
-}
 
 function initializeJoinButton() {
     const joinButton = document.getElementById('joinButton');
