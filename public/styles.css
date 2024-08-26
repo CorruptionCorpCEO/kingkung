@@ -159,19 +159,22 @@ input {
     top: 0;
     width: 100%;
     height: 100%;
-    overflow: auto;
+    overflow: hidden; /* Changed from auto to hidden */
     background-color: rgba(0,0,0,0.4);
 }
 
 .modal-content {
     background-color: rgba(0,0,0,0.8);
-    margin: 15% auto;
+    margin: 5vh auto; /* Changed from 15% to 5vh for better positioning */
     padding: 20px;
     border: 1px solid #888;
-    width: 80%;
+    width: 90%; /* Changed from 80% */
     max-width: 600px;
+    max-height: 90vh; /* Added max-height */
     color: white;
     position: relative;
+    overflow-y: auto; /* Added scrolling for y-axis */
+    box-sizing: border-box; /* Ensure padding is included in the height */
 }
 
 .close {
@@ -180,6 +183,11 @@ input {
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+    position: sticky; /* Make close button sticky */
+    top: 0; /* Stick to the top */
+    background-color: rgba(0,0,0,0.8); /* Match background color */
+    padding: 0 10px; /* Add some padding */
+    z-index: 1; /* Ensure it's above the content */
 }
 
     .close:hover,
@@ -189,78 +197,84 @@ input {
         cursor: pointer;
     }
 
+/* Add styles for the modal content to ensure proper spacing */
+.modal-content h2 {
+    margin-top: 0; /* Remove top margin from the first heading */
+}
+
+.modal-content p:last-child {
+    margin-bottom: 0; /* Remove bottom margin from the last paragraph */
+}
+
 #soundControls {
     position: fixed;
     bottom: 20px;
     right: 20px;
     display: flex;
-    gap: 10px;
+    gap: 20px;
 }
 
 .volume-control {
     display: flex;
-    flex-direction: column;
     align-items: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    border-radius: 20px;
+    padding: 5px 10px;
+    transition: width 0.3s ease;
 }
 
-.volume-slider {
-    -webkit-appearance: slider-vertical;
-    width: 8px;
-    height: 100px;
-    background: rgba(255, 255, 255, 0.3);
+.volume-icon-wrapper {
+    cursor: pointer;
+    padding: 5px;
+}
+
+.slider-wrapper {
+    overflow: hidden;
+    width: 0;
+    transition: width 0.3s ease;
+}
+
+.volume-control.expanded .slider-wrapper {
+    width: 100px;
+    margin-left: 10px;
+}
+
+.volume-control input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.6);
     outline: none;
-    opacity: 0;
+    opacity: 0.7;
     transition: opacity 0.2s;
-    margin-bottom: 10px;
 }
 
-    .volume-slider::-webkit-slider-thumb {
+    .volume-control input[type="range"]:hover {
+        opacity: 1;
+    }
+
+    .volume-control input[type="range"]::-webkit-slider-thumb {
         -webkit-appearance: none;
         appearance: none;
-        width: 16px;
-        height: 16px;
+        width: 15px;
+        height: 15px;
         background: white;
         cursor: pointer;
         border-radius: 50%;
     }
 
-    .volume-slider::-moz-range-thumb {
-        width: 16px;
-        height: 16px;
+    .volume-control input[type="range"]::-moz-range-thumb {
+        width: 15px;
+        height: 15px;
         background: white;
         cursor: pointer;
         border-radius: 50%;
     }
 
-.sound-button {
-    background-color: rgba(0, 0, 0, 0.5);
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: background-color 0.3s;
+.volume-control i {
+    font-size: 20px;
+    color: white;
 }
-
-    .sound-button:hover {
-        background-color: rgba(0, 0, 0, 0.7);
-    }
-
-    .sound-button i {
-        color: white;
-        font-size: 20px;
-    }
-
-    .sound-button.muted i.fa-volume-up::before {
-        content: "\f6a9"; /* Font Awesome icon for volume mute */
-    }
-
-    .sound-button.muted i.fa-music::before {
-        content: "\f1b1"; /* Font Awesome icon for music mute (corrected) */
-    }
 
 .game-cell {
     aspect-ratio: 1 / 1;
@@ -377,12 +391,7 @@ input {
 .player-name, .player-score {
     font-size: 4rem;
     font-weight: bold;
-    /* The color will be set inline by JavaScript */
-    text-shadow:
-    /* Black outline */
-    -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 -2px 0 #000, 0 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000,
-    /* 3D effect */
-    0 3px 0 rgba(0,0,0,0.3), 0 4px 0 rgba(0,0,0,0.2), 0 5px 0 rgba(0,0,0,0.1), 0 6px 1px rgba(0,0,0,.1), 0 0 5px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 0 3px 5px rgba(0,0,0,.2), 0 5px 10px rgba(0,0,0,.25), 0 10px 10px rgba(0,0,0,.2), 0 20px 20px rgba(0,0,0,.15);
+    text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0 -2px 0 #000, 0 2px 0 #000, -2px 0 0 #000, 2px 0 0 #000, 0 3px 0 rgba(0,0,0,0.3), 0 4px 0 rgba(0,0,0,0.2), 0 5px 0 rgba(0,0,0,0.1), 0 6px 1px rgba(0,0,0,.1), 0 0 5px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 0 3px 5px rgba(0,0,0,.2), 0 5px 10px rgba(0,0,0,.25), 0 10px 10px rgba(0,0,0,.2), 0 20px 20px rgba(0,0,0,.15);
 }
 
 .player-score {
@@ -422,11 +431,7 @@ input {
 
     .player-name, .player-score {
         font-size: 4rem;
-        text-shadow:
-        /* Black outline */
-        -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 -1px 0 #000, 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000,
-        /* 3D effect (slightly reduced for smaller screens) */
-        0 2px 0 rgba(0,0,0,0.3), 0 3px 0 rgba(0,0,0,0.2), 0 4px 1px rgba(0,0,0,.1), 0 0 3px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 0 3px 5px rgba(0,0,0,.2), 0 5px 10px rgba(0,0,0,.25);
+        text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 -1px 0 #000, 0 1px 0 #000, -1px 0 0 #000, 1px 0 0 #000, 0 2px 0 rgba(0,0,0,0.3), 0 3px 0 rgba(0,0,0,0.2), 0 4px 1px rgba(0,0,0,.1), 0 0 3px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.3), 0 3px 5px rgba(0,0,0,.2), 0 5px 10px rgba(0,0,0,.25);
     }
 
     .game-chip::before {
