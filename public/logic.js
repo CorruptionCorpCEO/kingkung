@@ -3,12 +3,8 @@ import gameModule from './kingkung.js';
 let currentPlayer;
 let socket;
 let backgroundMusic;
-let musicVolume = localStorage.getItem('musicVolume') !== null
-    ? parseFloat(localStorage.getItem('musicVolume'))
-    : 1;
-let soundVolume = localStorage.getItem('soundVolume') !== null
-    ? parseFloat(localStorage.getItem('soundVolume'))
-    : 1;
+
+const VOLUME_LEVELS = [0, 0.25, 0.5, 0.75, 1];
 
 function initializeSocketConnection() {
     socket = io();
@@ -60,62 +56,107 @@ function initializeSocketConnection() {
 
 function initializeMusicControls() {
     backgroundMusic = document.getElementById('backgroundMusic');
-    const musicVolumeButton = document.getElementById('musicVolumeButton');
-    const musicVolumeSlider = document.getElementById('musicVolumeSlider');
-
     if (backgroundMusic) {
         backgroundMusic.volume = musicVolume;
-        musicVolumeSlider.value = musicVolume * 100;
-        updateVolumeIcon(musicVolumeSlider, 'musicVolumeButton', true);
-
-        musicVolumeButton.addEventListener('click', () => toggleVolumeSlider(musicVolumeSlider));
-        musicVolumeSlider.addEventListener('input', updateMusicVolume);
-
         backgroundMusic.play().catch(error => {
             console.error('Error playing background music:', error);
         });
     }
 }
 
-function updateMusicVolume(e) {
-    musicVolume = e.target.value / 100;
-    localStorage.setItem('musicVolume', musicVolume);
-    updateVolumeIcon(e.target, 'musicVolumeButton', true);
+let musicVolume = parseFloat(localStorage.getItem('musicVolume') || '1');
+let soundVolume = parseFloat(localStorage.getItem('soundVolume') || '1');
+
+function initializeVolumeControls() {
+    const musicVolumeSlider = document.getElementById('musicVolume');
+    const soundVolumeSlider = document.getElementById('soundVolume');
+    const musicIconWrapper = document.querySelector('.volume-control:first-child .volume-icon-wrapper');
+    const soundIconWrapper = document.querySelector('.volume-control:last-child .volume-icon-wrapper');
+
+    if (musicVolumeSlider) {
+        musicVolumeSlider.value = musicVolume;
+        musicVolumeSlider.addEventListener('input', () => updateVolume('music'));
+    }
+
+    if (soundVolumeSlider) {
+        soundVolumeSlider.value = soundVolume;
+        soundVolumeSlider.addEventListener('input', () => updateVolume('sound'));
+    }
+
+    if (musicIconWrapper) {
+        musicIconWrapper.addEventListener('click', () => toggleVolumeControl('music'));
+    }
+
+    if (soundIconWrapper) {
+        soundIconWrapper.addEventListener('click', () => toggleVolumeControl('sound'));
+    }
+
+    // Set initial volumes and update icons
     if (backgroundMusic) {
         backgroundMusic.volume = musicVolume;
     }
+    gameModule.updateSoundVolume(soundVolume);
+    updateVolumeIcon('music', musicVolume);
+    updateVolumeIcon('sound', soundVolume);
 }
 
-function updateVolumeIcon(slider, buttonId, isMusic = false) {
-    const button = document.getElementById(buttonId);
-    const icon = button.querySelector('i');
-    const volume = slider.value;
+function updateVolume(type) {
+    const slider = document.getElementById(`${type}Volume`);
+    const newVolume = parseFloat(slider.value);
 
-    if (volume == 0) {
-        icon.className = isMusic ? 'fas fa-music-slash' : 'fas fa-volume-mute';
-        button.classList.add('muted');
-    } else if (volume < 50) {
-        icon.className = isMusic ? 'fas fa-music' : 'fas fa-volume-down';
-        button.classList.remove('muted');
+    if (type === 'music') {
+        musicVolume = newVolume;
+        localStorage.setItem('musicVolume', newVolume);
+        if (backgroundMusic) {
+            backgroundMusic.volume = newVolume;
+        }
     } else {
-        icon.className = isMusic ? 'fas fa-music' : 'fas fa-volume-up';
-        button.classList.remove('muted');
+        soundVolume = newVolume;
+        localStorage.setItem('soundVolume', newVolume);
+        gameModule.updateSoundVolume(newVolume);
+    }
+
+    updateVolumeIcon(type, newVolume);
+}
+
+function updateVolumeIcon(type, volume) {
+    const icon = document.getElementById(`${type}Icon`);
+    if (icon) {
+        if (volume === 0) {
+            icon.className = type === 'music' ? 'fas fa-volume-mute' : 'fas fa-volume-mute';
+        } else if (volume < 0.5) {
+            icon.className = type === 'music' ? 'fas fa-music' : 'fas fa-volume-down';
+        } else {
+            icon.className = type === 'music' ? 'fas fa-music' : 'fas fa-volume-up';
+        }
     }
 }
 
-function startBackgroundMusic() {
-    if (backgroundMusic && backgroundMusic.paused) {
-        backgroundMusic.play().catch(error => {
-            console.error('Error playing background music:', error);
-        });
+function toggleVolumeControl(type) {
+    const volumeControl = document.querySelector(`.volume-control:${type === 'music' ? 'first-child' : 'last-child'}`);
+    volumeControl.classList.toggle('expanded');
+}
+
+function cycleVolume(type) {
+    const currentVolume = type === 'music' ? musicVolume : soundVolume;
+    const currentIndex = VOLUME_LEVELS.indexOf(currentVolume);
+    const nextIndex = (currentIndex + 1) % VOLUME_LEVELS.length;
+    const newVolume = VOLUME_LEVELS[nextIndex];
+
+    if (type === 'music') {
+        musicVolume = newVolume;
+        localStorage.setItem('musicVolume', newVolume);
+        if (backgroundMusic) {
+            backgroundMusic.volume = newVolume;
+        }
+        updateVolumeIcon(document.getElementById('musicVolumeButton'), newVolume);
+    } else {
+        soundVolume = newVolume;
+        localStorage.setItem('soundVolume', newVolume);
+        gameModule.updateSoundVolume(newVolume);
+        updateVolumeIcon(document.getElementById('soundVolumeButton'), newVolume);
     }
 }
-
-function toggleVolumeSlider(slider) {
-    slider.style.opacity = slider.style.opacity === '1' ? '0' : '1';
-}
-
-
 
 
 
@@ -211,9 +252,6 @@ function showWinNotification(winner) {
             this.textContent = 'Waiting for other player...';
         });
     }
-
-    // Force a reflow to ensure styles are applied
-    notification.offsetHeight;
 }
 
 function getContrastColor(hexColor) {
@@ -256,26 +294,8 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeColorPicker();
     initializeJoinButton();
     initializeMusicControls();
+    initializeVolumeControls();
     initializeRulesModal();
-
-    // Set up sound volume control for game sounds
-    const soundVolumeSlider = document.getElementById('soundVolumeSlider');
-    const soundVolumeButton = document.getElementById('soundVolumeButton');
-    document.addEventListener('click', startBackgroundMusic, { once: true });
-
-    if (soundVolumeSlider && soundVolumeButton) {
-        soundVolumeSlider.value = soundVolume * 100;
-        updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton', false);
-
-        soundVolumeButton.addEventListener('click', () => toggleVolumeSlider(soundVolumeSlider));
-
-        soundVolumeSlider.addEventListener('input', (e) => {
-            const volume = e.target.value / 100;
-            localStorage.setItem('soundVolume', volume);
-            gameModule.updateSoundVolume(volume);
-            updateVolumeIcon(soundVolumeSlider, 'soundVolumeButton', false);
-        });
-    }
 
     // Hide color warning when color is changed
     if (window.gameColorPicker) {
@@ -286,6 +306,15 @@ document.addEventListener('DOMContentLoaded', () => {
     document.addEventListener('gameWon', (event) => {
         showWinNotification(event.detail);
     });
+
+    // Start background music on first user interaction
+    document.addEventListener('click', () => {
+        if (backgroundMusic && backgroundMusic.paused) {
+            backgroundMusic.play().catch(error => {
+                console.error('Error playing background music:', error);
+            });
+        }
+    }, { once: true });
 });
 
 export default {
