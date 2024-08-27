@@ -108,31 +108,7 @@ const gameModule = (function () {
         }
     }
 
-    function selectNewChip(row, col) {
-        if (selectedChipCoords) {
-            const prevChip = document.querySelector(`.game-cell[data-row="${selectedChipCoords.row}"][data-col="${selectedChipCoords.col}"] .game-chip`);
-            if (prevChip) {
-                prevChip.classList.remove('selected');
-            }
-        }
-
-        selectedChipCoords = { row, col };
-        const newChip = document.querySelector(`.game-cell[data-row="${row}"][data-col="${col}"] .game-chip`);
-        if (newChip) {
-            newChip.classList.add('selected');
-        }
-    }
-
-    function deselectChip() {
-        if (selectedChipCoords) {
-            const chip = document.querySelector(`.game-cell[data-row="${selectedChipCoords.row}"][data-col="${selectedChipCoords.col}"] .game-chip`);
-            if (chip) {
-                chip.classList.remove('selected');
-            }
-        }
-        selectedChipCoords = null;
-        removePotentialMoves();
-    }
+    
 
     function removePotentialMoves() {
         document.querySelectorAll('.potential-move').forEach(el => el.remove());
@@ -194,7 +170,7 @@ const gameModule = (function () {
         updateBoard(gameState.board);
         updateCurrentPlayer(gameState.currentPlayer);
         updatePlayerDisplays(gameState.currentPlayer.role);
-        highlightCurrentPlayerChips(gameState.currentPlayer.role);
+        updateSelectableChips(gameState);
 
         if (gameState.selectedChip) {
             selectNewChip(gameState.selectedChip.row, gameState.selectedChip.col);
@@ -220,6 +196,64 @@ const gameModule = (function () {
         }
 
         lastMoveBy = null;
+    }
+
+    function updateSelectableChips(gameState) {
+        const chips = document.querySelectorAll('.game-chip');
+        chips.forEach(chip => {
+            const row = parseInt(chip.closest('.game-cell').dataset.row);
+            const col = parseInt(chip.closest('.game-cell').dataset.col);
+            const isCurrentPlayerChip = chip.dataset.role === gameState.currentPlayer.role;
+            const isSelected = gameState.selectedChip && gameState.selectedChip.row === row && gameState.selectedChip.col === col;
+
+            if (isSelected) {
+                chip.classList.add('selectable');
+            } else if (isCurrentPlayerChip && !gameState.selectedChip) {
+                chip.classList.add('selectable');
+            } else {
+                chip.classList.remove('selectable');
+            }
+        });
+    }
+
+    function selectNewChip(row, col) {
+        if (selectedChipCoords) {
+            const prevChip = document.querySelector(`.game-cell[data-row="${selectedChipCoords.row}"][data-col="${selectedChipCoords.col}"] .game-chip`);
+            if (prevChip) {
+                prevChip.classList.remove('selectable');
+            }
+        }
+
+        selectedChipCoords = { row, col };
+        const newChip = document.querySelector(`.game-cell[data-row="${row}"][data-col="${col}"] .game-chip`);
+        if (newChip) {
+            newChip.classList.add('selectable');
+        }
+
+        // Remove 'selectable' class from all other chips when one is selected
+        document.querySelectorAll('.game-chip').forEach(chip => {
+            if (chip !== newChip) {
+                chip.classList.remove('selectable');
+            }
+        });
+    }
+
+    function deselectChip() {
+        if (selectedChipCoords) {
+            const chip = document.querySelector(`.game-cell[data-row="${selectedChipCoords.row}"][data-col="${selectedChipCoords.col}"] .game-chip`);
+            if (chip) {
+                chip.classList.remove('selectable');
+            }
+        }
+        selectedChipCoords = null;
+        removePotentialMoves();
+
+        // Reapply 'selectable' class to current player's chips
+        if (currentPlayer) {
+            document.querySelectorAll(`.game-chip[data-role="${currentPlayer.role}"]`).forEach(chip => {
+                chip.classList.add('selectable');
+            });
+        }
     }
 
     function updateBoard(board) {
@@ -377,7 +411,8 @@ const gameModule = (function () {
     return {
         init: init,
         handleDisconnection: handleDisconnection,
-        updateSoundVolume: updateSoundVolume
+        updateSoundVolume: updateSoundVolume,
+        updateGameState: updateGameState  // Add this line to expose the function
     };
 })();
 
