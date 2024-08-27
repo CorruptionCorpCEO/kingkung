@@ -4,6 +4,9 @@ let currentPlayer;
 let socket;
 let backgroundMusic;
 
+let musicVolume = parseFloat(localStorage.getItem('musicVolume') || '1');
+let soundVolume = parseFloat(localStorage.getItem('soundVolume') || '1');
+
 const VOLUME_LEVELS = [0, 0.25, 0.5, 0.75, 1];
 
 function initializeSocketConnection() {
@@ -48,9 +51,37 @@ function initializeSocketConnection() {
         }
     });
 
+    socket.on('gameStateUpdate', (gameState) => {
+        gameModule.updateGameState(gameState);
+    });
+
+    socket.on('gameWon', ({ winner, gameState }) => {
+        gameModule.updateGameState(gameState);
+        showWinNotification(winner);
+    });
+
+    socket.on('playerReadyForRematch', (playerRole) => {
+        const playAgainButton = document.getElementById('playAgainButton');
+        if (playAgainButton) {
+            if (playerRole !== currentPlayer.role) {
+                playAgainButton.textContent = 'Other player is ready. Click to start!';
+                playAgainButton.disabled = false;
+            }
+        }
+    });
+
     socket.on('gameReset', (gameState) => {
+        gameModule.updateGameState(gameState);
         hideWinNotification();
-        // Additional reset logic if needed
+        resetPlayAgainButton();
+    });
+
+    socket.on('waitingForPlayAgain', () => {
+        const playAgainButton = document.getElementById('playAgainButton');
+        if (playAgainButton) {
+            playAgainButton.disabled = true;
+            playAgainButton.textContent = 'Waiting for other player...';
+        }
     });
 }
 
@@ -58,14 +89,16 @@ function initializeMusicControls() {
     backgroundMusic = document.getElementById('backgroundMusic');
     if (backgroundMusic) {
         backgroundMusic.volume = musicVolume;
+    }
+}
+
+function startBackgroundMusic() {
+    if (backgroundMusic && backgroundMusic.paused) {
         backgroundMusic.play().catch(error => {
             console.error('Error playing background music:', error);
         });
     }
 }
-
-let musicVolume = parseFloat(localStorage.getItem('musicVolume') || '1');
-let soundVolume = parseFloat(localStorage.getItem('soundVolume') || '1');
 
 function initializeVolumeControls() {
     const musicVolumeSlider = document.getElementById('musicVolume');
@@ -109,6 +142,9 @@ function updateVolume(type) {
         localStorage.setItem('musicVolume', newVolume);
         if (backgroundMusic) {
             backgroundMusic.volume = newVolume;
+            if (backgroundMusic.paused) {
+                startBackgroundMusic();
+            }
         }
     } else {
         soundVolume = newVolume;
@@ -123,10 +159,8 @@ function updateVolumeIcon(type, volume) {
     const icon = document.getElementById(`${type}Icon`);
     if (icon) {
         if (type === 'music') {
-            // Always use the music icon for music, just toggle the mute state
             icon.className = volume === 0 ? 'fas fa-volume-mute' : 'fas fa-music';
         } else {
-            // For sound effects, use different icons based on volume
             if (volume === 0) {
                 icon.className = 'fas fa-volume-mute';
             } else if (volume < 0.5) {
@@ -165,31 +199,6 @@ function initializeColorPicker() {
     updateVolumeIcon('music', musicVolume);
     updateVolumeIcon('sound', soundVolume);
 }
-
-function cycleVolume(type) {
-    const currentVolume = type === 'music' ? musicVolume : soundVolume;
-    const currentIndex = VOLUME_LEVELS.indexOf(currentVolume);
-    const nextIndex = (currentIndex + 1) % VOLUME_LEVELS.length;
-    const newVolume = VOLUME_LEVELS[nextIndex];
-
-    if (type === 'music') {
-        musicVolume = newVolume;
-        localStorage.setItem('musicVolume', newVolume);
-        if (backgroundMusic) {
-            backgroundMusic.volume = newVolume;
-        }
-        updateVolumeIcon(document.getElementById('musicVolumeButton'), newVolume);
-    } else {
-        soundVolume = newVolume;
-        localStorage.setItem('soundVolume', newVolume);
-        gameModule.updateSoundVolume(newVolume);
-        updateVolumeIcon(document.getElementById('soundVolumeButton'), newVolume);
-    }
-}
-
-
-
-
 
 function initializeJoinButton() {
     const joinButton = document.getElementById('joinButton');
@@ -260,16 +269,25 @@ function showWinNotification(winner) {
 
         playAgainButton.addEventListener('click', function () {
             socket.emit('playAgain');
-            this.disabled = true;
             this.textContent = 'Waiting for other player...';
+            this.disabled = true;
         });
     }
 }
 
+function resetPlayAgainButton() {
+    const playAgainButton = document.getElementById('playAgainButton');
+    if (playAgainButton) {
+        playAgainButton.textContent = 'Play Again';
+        playAgainButton.disabled = false;
+    }
+}
+
 function getContrastColor(hexColor) {
-    const r = parseInt(hexColor.slice(1, 3), 16);
-    const g = parseInt(hexColor.slice(3, 5), 16);
-    const b = parseInt(hexColor.slice(5, 7), 16);
+    hexColor = hexColor.replace('#', '');
+    const r = parseInt(hexColor.substr(0, 2), 16);
+    const g = parseInt(hexColor.substr(2, 2), 16);
+    const b = parseInt(hexColor.substr(4, 2), 16);
     const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
     return luminance > 0.5 ? '#000000' : '#ffffff';
 }
@@ -314,19 +332,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.gameColorPicker.on('color:change', hideColorWarning);
     }
 
-    // Listen for the custom gameWon event
-    document.addEventListener('gameWon', (event) => {
-        showWinNotification(event.detail);
-    });
-
     // Start background music on first user interaction
-    document.addEventListener('click', () => {
-        if (backgroundMusic && backgroundMusic.paused) {
-            backgroundMusic.play().catch(error => {
-                console.error('Error playing background music:', error);
-            });
-        }
-    }, { once: true });
+    document.addEventListener('click', startBackgroundMusic, { once: true });
+    document.addEventListener('keydown', startBackgroundMusic, { once: true });
 });
 
 export default {
