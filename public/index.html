@@ -4,16 +4,256 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta property="og:title" content="King Kung">
-    <meta property="og:description" content="A 1v1 Chess / Connect 4 Hybrid">
+    <meta property="og:description" content="A Chess / Connect 4 Hybrid">
     <meta property="og:image" content="https://king-kung.com/assets/social-share.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:url" content="https://king-kung.com">
     <meta property="og:type" content="website">
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--main-bg-color);
+            background-image: url('assets/background-tile.png');
+            background-repeat: repeat;
+            background-size: 2em;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+
+        .join-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        input {
+            padding: 0.5rem;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: var(--input-bg-color);
+            color: var(--text-color);
+            width: 100%;
+            max-width: 300px;
+            box-sizing: border-box;
+        }
+
+        #colorPicker {
+            margin: 0 auto 1rem;
+            max-width: 100%;
+        }
+
+        #joinButton {
+            padding: 0.5rem 1rem;
+            font-size: 1rem;
+            background-color: var(--button-bg-color);
+            color: var(--text-color);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            width: 100%;
+            max-width: 300px;
+        }
+
+            #joinButton:hover {
+                background-color: var(--button-hover-color);
+            }
+
+        .error-message {
+            position: absolute;
+            bottom: 4em;
+            left: 0;
+            right: 0;
+            color: red;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none;
+        }
+
+        #kingkungmain {
+            width: 30em;
+            max-width: 100%;
+        }
+
+        #rulesButton {
+            font-size: 1rem;
+            background-color: #808080;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-block;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* Changed from auto to hidden */
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        #soundControls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .volume-control {
+            display: flex;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 20px;
+            padding: 5px 10px;
+            transition: width 0.3s ease;
+        }
+
+        .volume-icon-wrapper {
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .slider-wrapper {
+            overflow: hidden;
+            width: 0;
+            transition: width 0.3s ease;
+        }
+
+        .volume-control.expanded .slider-wrapper {
+            width: 100px;
+            margin-left: 10px;
+        }
+
+        .volume-control input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.6);
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+            .volume-control input[type="range"]:hover {
+                opacity: 1;
+            }
+
+            .volume-control input[type="range"]::-webkit-slider-thumb {
+                -webkit-appearance: none;
+                appearance: none;
+                width: 15px;
+                height: 15px;
+                background: white;
+                cursor: pointer;
+                border-radius: 50%;
+            }
+
+            .volume-control input[type="range"]::-moz-range-thumb {
+                width: 15px;
+                height: 15px;
+                background: white;
+                cursor: pointer;
+                border-radius: 50%;
+            }
+
+        .volume-control i {
+            font-size: 20px;
+            color: white;
+        }
+
+        .game-cell {
+            aspect-ratio: 1 / 1;
+            cursor: pointer;
+            border: outset;
+            background-color: lightgray;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-chip {
+            width: 70%;
+            height: 70%;
+            border-radius: 50%;
+            position: absolute;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.8), rgba(0, 0, 0, 0.3) 50%);
+            box-shadow: inset 0 5px 8px rgba(0, 0, 0, 0.4), inset 0 -5px 8px rgba(0, 0, 0, 0.4), 0 0 5px rgba(0, 0, 0, 0.5);
+        }
+
+            .game-chip::before,
+            .game-chip::after {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border-radius: 50%;
+                box-sizing: border-box;
+            }
+
+            .game-chip::before {
+                width: calc(100% + 12px);
+                height: calc(100% + 12px);
+                border: 12px solid black;
+            }
+
+            .game-chip::after {
+                width: calc(100% + 24px);
+                height: calc(100% + 24px);
+                border: 8px solid transparent;
+                transition: border-color 0.3s ease;
+            }
+
+
+            .game-chip.selectable::after {
+                border-color: inherit;
+            }
+
+        .potential-move {
+            width: 35%;
+            height: 35%;
+            border: 6px solid black;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.5;
+            transition: transform 0.2s ease;
+            box-sizing: border-box;
+        }
+
+            .potential-move:hover {
+                transform: translate(-50%, -50%) scale(1.2);
+            }
+        /* Add other critical styles */
+    </style>
     <title>King Kung</title>
     <link rel="icon" type="image/png" href="kingkungfavicon.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
-    <link rel="stylesheet" href="styles.css">
+    <link rel="preload" href="styles.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="styles.css"></noscript>
 </head>
 <body>
     <div id="gameWrapper">
@@ -83,6 +323,6 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="iro.min.js"></script>
-    <script type="module" src="logic.js"></script>
+    <script type="module" src="logic.js" defer></script>
 </body>
 </html>
