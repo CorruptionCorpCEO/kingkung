@@ -33,7 +33,24 @@
         </div>
         <div id="gameContainer"></div>
 
-      
+        <div id="rulesModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Game Rules</h2>
+                <h3>Chip Selection and Movement:</h3>
+                <ul>
+                    <li>Players take turns moving their chips, which can move one space in any direction (vertically, horizontally, or diagonally) similar to a king in chess.</li>
+                    <li>The board in King Kung wraps around, allowing chips to be moved past one side of the board and spit out the other.</li>
+                    <li>A chip can only move to a space if it is not occupied by another chip.</li>
+                    <li>On their turn, a player clicks on one of their chips to see potential moves, highlighted with semi-transparent circles.</li>
+                    <li>Clicking on a highlighted potential move space moves the chip to that space.</li>
+                </ul>
+                <h3>Chip Swapping Mechanic:</h3>
+                <p>If a chip is adjacent to two enemy chips vertically or horizontally, it can swap places with one of those enemy chips. Swapping chips cannot be undone immediately; players cannot move back to the original position if it would undo a swap.</p>
+                <h3>Winning the Game:</h3>
+                <p>A player wins by lining up all four of their chips in a vertical, horizontal or diagonal line. Upon winning, a notification displays the winner, the game is reset, and the winner's score is incremented.</p>
+            </div>
+        </div>
 
 
         <div id="soundControls">
@@ -56,24 +73,7 @@
         </div>
     </div>
 
-    <div id="rulesModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Game Rules</h2>
-            <h3>Chip Selection and Movement:</h3>
-            <ul>
-                <li>Players take turns moving their chips, which can move one space in any direction (vertically, horizontally, or diagonally) similar to a king in chess.</li>
-                <li>The board in King Kung wraps around, allowing chips to be moved past one side of the board and spit out the other.</li>
-                <li>A chip can only move to a space if it is not occupied by another chip.</li>
-                <li>On their turn, a player clicks on one of their chips to see potential moves, highlighted with semi-transparent circles.</li>
-                <li>Clicking on a highlighted potential move space moves the chip to that space.</li>
-            </ul>
-            <h3>Chip Swapping Mechanic:</h3>
-            <p>If a chip is adjacent to two enemy chips vertically or horizontally, it can swap places with one of those enemy chips. Swapping chips cannot be undone immediately; players cannot move back to the original position if it would undo a swap.</p>
-            <h3>Winning the Game:</h3>
-            <p>A player wins by lining up all four of their chips in a vertical, horizontal or diagonal line. Upon winning, a notification displays the winner, the game is reset, and the winner's score is incremented.</p>
-        </div>
-    </div>
+    
 
 
     <audio id="backgroundMusic" loop>
