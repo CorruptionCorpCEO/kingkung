@@ -142,13 +142,14 @@ input {
 }
 
 #rulesButton {
+    font-size: 1rem;
     background-color: #808080;
     color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
     cursor: pointer;
-    margin-top: 10px;
     display: inline-block;
+    
 }
 
 .modal {
