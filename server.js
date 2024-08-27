@@ -131,6 +131,9 @@ io.on('connection', (socket) => {
 
             console.log(`Player ${playerRole} voted to play again`);
 
+            // Notify the other player that this player is ready
+            socket.to(room.roomCode).emit('playerReadyForRematch', playerRole);
+
             if (Object.values(room.gameState.playAgainVotes).every(vote => vote)) {
                 console.log('All players voted to play again. Resetting game.');
                 room.gameState = createInitialGameState();
@@ -142,7 +145,7 @@ io.on('connection', (socket) => {
                 io.to(room.roomCode).emit('gameReset', room.gameState);
             } else {
                 console.log('Waiting for other player to vote');
-                socket.to(room.roomCode).emit('waitingForPlayAgain');
+                socket.emit('waitingForPlayAgain');
             }
         }
     });
@@ -403,6 +406,9 @@ function checkWinCondition(gameState, room) {
         [[0, 3], [1, 2], [2, 1], [3, 0]]
     ];
 
+    let currentPlayerWin = null;
+    let opponentWin = null;
+
     for (const pattern of winPatterns) {
         const [a, b, c, d] = pattern;
         const [rowA, colA] = a;
@@ -412,9 +418,21 @@ function checkWinCondition(gameState, room) {
             gameState.board[row][col] &&
             gameState.board[row][col].role === chipA.role
         )) {
-            room.lastWinner = chipA.role;
-            return chipA;
+            if (chipA.role === gameState.currentPlayer.role) {
+                currentPlayerWin = chipA;
+            } else {
+                opponentWin = chipA;
+            }
         }
+    }
+
+    // Prioritize the current player's win
+    if (currentPlayerWin) {
+        room.lastWinner = currentPlayerWin.role;
+        return currentPlayerWin;
+    } else if (opponentWin) {
+        room.lastWinner = opponentWin.role;
+        return opponentWin;
     }
 
     return null;
