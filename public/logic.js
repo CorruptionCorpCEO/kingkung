@@ -39,7 +39,8 @@ function initializeSocketConnection() {
     socket.on('gameStart', (data) => {
         console.log('Game is starting');
         hideWaitingMessage();
-        gameModule.init(currentPlayer, data.players, socket);
+        document.getElementById('gameContainer').style.display = 'flex';
+        initializeGame(currentPlayer, data.players, socket);
     });
 
     socket.on('playerDisconnected', (data) => {
@@ -196,8 +197,7 @@ function toggleVolumeControl(type) {
     volumeControl.classList.toggle('expanded');
 }
 
-function initializeLobbySystem()
-{
+function initializeLobbySystem() {
     const elements = {
         showLobbyButton: document.getElementById('showLobbyButton'),
         lobbyModal: document.getElementById('lobbyModal'),
@@ -205,15 +205,7 @@ function initializeLobbySystem()
         roomCodeInput: document.getElementById('roomCode'),
         playerNameInput: document.getElementById('playerName'),
         privateRoomCheckbox: document.getElementById('privateRoom')
-
     };
-
-    const roomCodeInput = document.getElementById('roomCode');
-    if (roomCodeInput) {
-        roomCodeInput.addEventListener('input', handleRoomCodeChange);
-    } else {
-        console.error('Room code input not found');
-    }
 
     // Check if all required elements exist
     const missingElements = Object.entries(elements)
@@ -252,6 +244,7 @@ function initializeLobbySystem()
 
     // Set up input listeners
     elements.roomCodeInput.addEventListener('input', () => {
+        handleRoomCodeChange(elements.roomCodeInput);
         hideWarnings();
         updateJoinInfo();
     });
@@ -276,23 +269,6 @@ function initializeLobbySystem()
     console.log('Lobby system initialized successfully');
 }
 
-function handleRoomCodeChange(event) {
-    const roomCodeInput = event.target;
-    const privateRoomCheckbox = document.getElementById('privateRoom');
-
-    if (privateRoomCheckbox) {
-        if (roomCodeInput.value !== roomCodeInput.dataset.originalCode) {
-            privateRoomCheckbox.disabled = false;
-        } else {
-            privateRoomCheckbox.disabled = true;
-        }
-    } else {
-        console.error('Private room checkbox not found');
-    }
-
-    hideWarnings();
-    updateJoinInfo();
-}
 function handleJoinGame() {
     const roomCode = document.getElementById('roomCode').value;
     const playerName = document.getElementById('playerName').value;
@@ -391,6 +367,20 @@ function selectLobbyRoom(room) {
     updateJoinInfo();
 }
 
+function handleRoomCodeChange(roomCodeInput) {
+    const privateRoomCheckbox = document.getElementById('privateRoom');
+
+    if (privateRoomCheckbox) {
+        if (roomCodeInput.value !== roomCodeInput.dataset.originalCode) {
+            privateRoomCheckbox.disabled = false;
+        } else {
+            privateRoomCheckbox.disabled = true;
+        }
+    } else {
+        console.error('Private room checkbox not found');
+    }
+}
+
 function hideMainMenu() {
     document.getElementById('mainMenu').style.display = 'none';
 }
@@ -401,6 +391,40 @@ function showWaitingMessage() {
 
 function hideWaitingMessage() {
     document.getElementById('waitingMessage').style.display = 'none';
+}
+
+function updatePlayerDisplays(gameState) {
+    const clientPlayer = gameState.players.find(p => p.role === currentPlayer.role);
+    const opponentPlayer = gameState.players.find(p => p.role !== currentPlayer.role);
+
+    updatePlayerDisplay('clientPlayer', clientPlayer, gameState);
+    updatePlayerDisplay('opponentPlayer', opponentPlayer, gameState);
+
+    handleLongPlayerNames();
+}
+
+function updatePlayerDisplay(elementId, player, gameState) {
+    const displayElement = document.getElementById(elementId);
+    if (displayElement && player) {
+        displayElement.innerHTML = `
+            <span class="player-name" style="color: ${player.color};">${player.name}</span>
+            <span class="player-score" style="color: ${player.color};">${gameState.scores[player.role]}</span>
+        `;
+        displayElement.classList.toggle('current-turn', player.role === gameState.currentPlayer.role);
+    }
+}
+
+function handleLongPlayerNames() {
+    const playerNames = document.querySelectorAll('.player-display .player-name');
+    const maxLength = 15; // Adjust this value as needed
+
+    playerNames.forEach(nameElement => {
+        const name = nameElement.textContent;
+        if (name.length > maxLength) {
+            nameElement.textContent = name.substring(0, maxLength) + '...';
+            nameElement.title = name; // Show full name on hover
+        }
+    });
 }
 
 function showWinNotification(winner) {
@@ -500,6 +524,10 @@ function hideWarnings() {
     if (privateRoomWarning) {
         privateRoomWarning.style.display = 'none';
     }
+}
+
+function initializeGame(currentPlayer, players, socket) {
+    gameModule.init(currentPlayer, players, socket, updatePlayerDisplays);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
