@@ -259,18 +259,37 @@
     <div id="gameWrapper">
         <div id="mainMenu" class="container">
             <div class="join-form">
-                <img id="kingkungmain" src="assets/kingkungmain.gif" alt="King Kung Main">
+                <img src="assets/kingkungmain.gif" id="kingkungmain" alt="King Kung Main">
                 <div id="colorPicker"></div>
                 <input type="text" id="roomCode" placeholder="Enter Room Code">
                 <input type="text" id="playerName" placeholder="Enter Your Name">
-                <button id="joinButton">Join Game</button>
-                <div id="rulesButton">Rules</div>
+
+                <button id="joinButton">Create / Join Room</button>
+                <button id="showLobbyButton" class="main-button">Show Lobby</button>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="privateRoom" style="width: 20px; height: 20px; margin-right: 10px; vertical-align: middle;">
+                    <label for="privateRoom">Private Room</label>
+                </div>
+                <button id="rulesButton">Rules</button>
             </div>
+            <div id="lobbyModal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Available Rooms</h2>
+                    <div id="lobbyList">
+                    </div>
+                </div>
+            </div>
+
         </div>
+
         <div id="colorWarning" class="error-message"></div>
+        <div id="privateRoomWarning" class="error-message" style="display: none;"></div>
+
         <div id="waitingMessage" class="container" style="display: none;">
             <h2>Waiting for another player<span class="ellipsis"></span></h2>
         </div>
+
         <div id="gameContainer"></div>
 
         <div id="rulesModal" class="modal">
@@ -313,7 +332,7 @@
         </div>
     </div>
 
-    
+
 
 
     <audio id="backgroundMusic" loop>
