@@ -94,18 +94,7 @@
             display: inline-block;
         }
 
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: hidden; /* Changed from auto to hidden */
-            background-color: rgba(0,0,0,0.4);
-        }
-
+        
         #soundControls {
             position: fixed;
             bottom: 20px;
@@ -290,7 +279,11 @@
             <h2>Waiting for another player<span class="ellipsis"></span></h2>
         </div>
 
-        <div id="gameContainer"></div>
+        <div id="gameContainer" style="display: none;">
+            <div id="clientPlayer" class="player-display"></div>
+            <div id="gameBoard"></div>
+            <div id="opponentPlayer" class="player-display"></div>
+        </div>
 
         <div id="rulesModal" class="modal">
             <div class="modal-content">
