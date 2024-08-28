@@ -3,17 +3,17 @@ import gameModule from './kingkung.js';
 let currentPlayer;
 let socket;
 let backgroundMusic;
+let lobbyList = [];
 
 let musicVolume = parseFloat(localStorage.getItem('musicVolume') || '1');
 let soundVolume = parseFloat(localStorage.getItem('soundVolume') || '1');
-
-const VOLUME_LEVELS = [0, 0.25, 0.5, 0.75, 1];
 
 function initializeSocketConnection() {
     socket = io();
 
     socket.on('connect', () => {
         console.log('Connected to server');
+        socket.emit('requestLobbyUpdate');
     });
 
     socket.on('joinRoomResponse', (response) => {
@@ -26,7 +26,13 @@ function initializeSocketConnection() {
             }
         } else {
             console.log('Failed to join room:', response.message);
-            alert(`Failed to join room: ${response.message}`);
+            if (response.errorType === 'colorError') {
+                showColorWarning(response.message);
+            } else if (response.errorType === 'privateRoomError') {
+                showPrivateRoomWarning(response.message);
+            } else {
+                alert(`Failed to join room: ${response.message}`);
+            }
         }
     });
 
@@ -41,14 +47,13 @@ function initializeSocketConnection() {
         currentPlayer = data.players[0]; // Update current player (now host)
         showWaitingMessage();
         gameModule.handleDisconnection();
+        socket.emit('requestLobbyUpdate');
     });
 
-    socket.on('colorValidation', (data) => {
-        if (data.valid) {
-            joinRoom();
-        } else {
-            showColorWarning();
-        }
+    socket.on('lobbyUpdate', (updatedLobbyList) => {
+        console.log("Received lobby update:", updatedLobbyList);
+        lobbyList = updatedLobbyList;
+        updateLobbyListDisplay();
     });
 
     socket.on('gameStateUpdate', (gameState) => {
@@ -83,6 +88,25 @@ function initializeSocketConnection() {
             playAgainButton.textContent = 'Waiting for other player...';
         }
     });
+}
+
+function initializeColorPicker() {
+    const colorPicker = new iro.ColorPicker("#colorPicker", {
+        width: 200,
+        color: "hsl(0, 100%, 50%)",
+        borderWidth: 1,
+        borderColor: "#ccc",
+        layout: [
+            {
+                component: iro.ui.Slider,
+                options: {
+                    sliderType: 'hue'
+                }
+            }
+        ]
+    });
+
+    window.gameColorPicker = colorPicker;
 }
 
 function initializeMusicControls() {
@@ -124,11 +148,6 @@ function initializeVolumeControls() {
         soundIconWrapper.addEventListener('click', () => toggleVolumeControl('sound'));
     }
 
-    // Set initial volumes and update icons
-    if (backgroundMusic) {
-        backgroundMusic.volume = musicVolume;
-    }
-    gameModule.updateSoundVolume(soundVolume);
     updateVolumeIcon('music', musicVolume);
     updateVolumeIcon('sound', soundVolume);
 }
@@ -177,68 +196,199 @@ function toggleVolumeControl(type) {
     volumeControl.classList.toggle('expanded');
 }
 
-function initializeColorPicker() {
-    const colorPicker = new iro.ColorPicker("#colorPicker", {
-        width: 200,
-        color: "hsl(0, 100%, 50%)",
-        borderWidth: 1,
-        borderColor: "#ccc",
-        layout: [
-            {
-                component: iro.ui.Slider,
-                options: {
-                    sliderType: 'hue'
-                }
-            }
-        ]
+function initializeLobbySystem()
+{
+    const elements = {
+        showLobbyButton: document.getElementById('showLobbyButton'),
+        lobbyModal: document.getElementById('lobbyModal'),
+        joinButton: document.getElementById('joinButton'),
+        roomCodeInput: document.getElementById('roomCode'),
+        playerNameInput: document.getElementById('playerName'),
+        privateRoomCheckbox: document.getElementById('privateRoom')
+
+    };
+
+    const roomCodeInput = document.getElementById('roomCode');
+    if (roomCodeInput) {
+        roomCodeInput.addEventListener('input', handleRoomCodeChange);
+    } else {
+        console.error('Room code input not found');
+    }
+
+    // Check if all required elements exist
+    const missingElements = Object.entries(elements)
+        .filter(([key, element]) => !element)
+        .map(([key]) => key);
+
+    if (missingElements.length > 0) {
+        console.error('Missing elements:', missingElements.join(', '));
+        return; // Exit the function if any required elements are missing
+    }
+
+    // Set up lobby modal
+    elements.showLobbyButton.addEventListener('click', () => {
+        console.log("Show Lobby button clicked");
+        socket.emit('requestLobbyUpdate');
+        elements.lobbyModal.style.display = 'block';
     });
 
-    window.gameColorPicker = colorPicker;
-
-    // Ensure volume icons are correct after color picker initialization
-    updateVolumeIcon('music', musicVolume);
-    updateVolumeIcon('sound', soundVolume);
-}
-
-function initializeJoinButton() {
-    const joinButton = document.getElementById('joinButton');
-    if (joinButton) {
-        joinButton.addEventListener('click', validateAndJoin);
+    const closeLobbyBtn = elements.lobbyModal.querySelector('.close');
+    if (closeLobbyBtn) {
+        closeLobbyBtn.addEventListener('click', () => {
+            elements.lobbyModal.style.display = 'none';
+        });
     } else {
-        console.error('Join button not found in the DOM');
+        console.warn('Close button for lobby modal not found');
     }
+
+    window.addEventListener('click', (event) => {
+        if (event.target === elements.lobbyModal) {
+            elements.lobbyModal.style.display = 'none';
+        }
+    });
+
+    // Set up join button
+    elements.joinButton.addEventListener('click', handleJoinGame);
+
+    // Set up input listeners
+    elements.roomCodeInput.addEventListener('input', () => {
+        hideWarnings();
+        updateJoinInfo();
+    });
+
+    elements.playerNameInput.addEventListener('input', updateJoinInfo);
+
+    elements.privateRoomCheckbox.addEventListener('change', () => {
+        hideWarnings();
+        updateJoinInfo();
+    });
+
+    // Set up color picker listener
+    if (window.gameColorPicker) {
+        window.gameColorPicker.on('color:change', () => {
+            hideWarnings();
+            updateJoinInfo();
+        });
+    } else {
+        console.error('Color picker not initialized');
+    }
+
+    console.log('Lobby system initialized successfully');
 }
 
-function validateAndJoin() {
+function handleRoomCodeChange(event) {
+    const roomCodeInput = event.target;
+    const privateRoomCheckbox = document.getElementById('privateRoom');
+
+    if (privateRoomCheckbox) {
+        if (roomCodeInput.value !== roomCodeInput.dataset.originalCode) {
+            privateRoomCheckbox.disabled = false;
+        } else {
+            privateRoomCheckbox.disabled = true;
+        }
+    } else {
+        console.error('Private room checkbox not found');
+    }
+
+    hideWarnings();
+    updateJoinInfo();
+}
+function handleJoinGame() {
     const roomCode = document.getElementById('roomCode').value;
     const playerName = document.getElementById('playerName').value;
     const playerColor = window.gameColorPicker.color.hexString;
+    const privateRoom = document.getElementById('privateRoom').checked;
 
     if (!roomCode || !playerName) {
         alert('Please enter both room code and player name.');
         return;
     }
 
-    socket.emit('validateColor', { roomCode, playerColor: window.gameColorPicker.color.hsl.h });
+    hideWarnings();
+    socket.emit('joinRoom', { roomCode, playerName, playerColor, privateRoom });
 }
 
-function joinRoom() {
+function updateJoinInfo() {
     const roomCode = document.getElementById('roomCode').value;
     const playerName = document.getElementById('playerName').value;
     const playerColor = window.gameColorPicker.color.hexString;
+    const privateRoom = document.getElementById('privateRoom').checked;
 
-    socket.emit('joinRoom', { roomCode, playerName, playerColor });
+    if (roomCode && playerName && playerColor) {
+        socket.emit('updateJoinInfo', { roomCode, playerName, playerColor, privateRoom });
+    }
 }
 
-function showColorWarning() {
-    const warningElement = document.getElementById('colorWarning');
-    warningElement.textContent = 'Please choose a different color. It\'s too similar to the other player\'s color.';
-    warningElement.style.display = 'block';
+function updateLobbyListDisplay() {
+    console.log("Updating lobby list display");
+    console.log("Current lobbyList:", lobbyList);
+
+    const lobbyListContainer = document.getElementById('lobbyList');
+
+    if (!lobbyListContainer) {
+        console.error("Lobby list container not found!");
+        return;
+    }
+
+    console.log("Clearing lobby list container");
+    lobbyListContainer.innerHTML = '';
+
+    if (lobbyList.length === 0) {
+        console.log("No rooms available, adding no-rooms-message");
+        const noRoomsMessage = document.createElement('div');
+        noRoomsMessage.className = 'no-rooms-message';
+        noRoomsMessage.textContent = 'No public rooms available';
+        lobbyListContainer.appendChild(noRoomsMessage);
+        console.log("No-rooms-message added:", noRoomsMessage);
+    } else {
+        console.log("Rooms available, adding room elements");
+        lobbyList.forEach(room => {
+            const roomElement = document.createElement('div');
+            roomElement.className = 'lobby-room';
+
+            const chipElement = document.createElement('div');
+            chipElement.className = 'lobby-chip';
+            chipElement.style.backgroundColor = room.playerColor;
+
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'player-name';
+            nameSpan.textContent = room.playerName;
+
+            roomElement.appendChild(chipElement);
+            roomElement.appendChild(nameSpan);
+
+            roomElement.addEventListener('click', () => selectLobbyRoom(room));
+
+            lobbyListContainer.appendChild(roomElement);
+        });
+    }
+
+    console.log("Lobby list container after update:", lobbyListContainer.innerHTML);
 }
 
-function hideColorWarning() {
-    const warningElement = document.getElementById('colorWarning');
-    warningElement.style.display = 'none';
+function selectLobbyRoom(room) {
+    const roomCodeInput = document.getElementById('roomCode');
+    const privateRoomCheckbox = document.getElementById('privateRoom');
+
+    if (roomCodeInput && privateRoomCheckbox) {
+        roomCodeInput.value = room.roomCode;
+        privateRoomCheckbox.checked = false;
+        privateRoomCheckbox.disabled = true;
+
+        // Store the original room code
+        roomCodeInput.dataset.originalCode = room.roomCode;
+    } else {
+        console.error('Room code input or private room checkbox not found');
+    }
+
+    const lobbyModal = document.getElementById('lobbyModal');
+    if (lobbyModal) {
+        lobbyModal.style.display = 'none';
+    } else {
+        console.error('Lobby modal not found');
+    }
+
+    updateJoinInfo();
 }
 
 function hideMainMenu() {
@@ -319,20 +469,51 @@ function initializeRulesModal() {
     });
 }
 
+function showColorWarning(message) {
+    const warningElement = document.getElementById('colorWarning');
+    if (warningElement) {
+        warningElement.textContent = message;
+        warningElement.style.display = 'block';
+    } else {
+        console.error('Color warning element not found');
+    }
+}
+
+function showPrivateRoomWarning(message) {
+    const warningElement = document.getElementById('privateRoomWarning');
+    if (warningElement) {
+        warningElement.textContent = message;
+        warningElement.style.display = 'block';
+    } else {
+        console.error('Private room warning element not found');
+    }
+}
+
+function hideWarnings() {
+    const colorWarning = document.getElementById('colorWarning');
+    const privateRoomWarning = document.getElementById('privateRoomWarning');
+
+    if (colorWarning) {
+        colorWarning.style.display = 'none';
+    }
+
+    if (privateRoomWarning) {
+        privateRoomWarning.style.display = 'none';
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initializeSocketConnection();
     initializeColorPicker();
-    initializeJoinButton();
     initializeMusicControls();
     initializeVolumeControls();
     initializeRulesModal();
+    initializeLobbySystem();
 
-    // Hide color warning when color is changed
     if (window.gameColorPicker) {
-        window.gameColorPicker.on('color:change', hideColorWarning);
+        window.gameColorPicker.on('color:change', hideWarnings);
     }
 
-    // Start background music on first user interaction
     document.addEventListener('click', startBackgroundMusic, { once: true });
     document.addEventListener('keydown', startBackgroundMusic, { once: true });
 });
@@ -340,6 +521,6 @@ document.addEventListener('DOMContentLoaded', () => {
 export default {
     updateSoundVolume: (volume) => {
         soundVolume = volume;
-        // Update game sound volume here if needed
+        gameModule.updateSoundVolume(volume);
     }
 };
