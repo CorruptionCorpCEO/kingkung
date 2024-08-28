@@ -53,7 +53,7 @@ io.on('connection', (socket) => {
                 private: privateRoom
             };
             rooms.set(roomCode, room);
-            console.log(`Room ${roomCode} created`);
+            
 
             // Add to public rooms if it's not private
             if (!privateRoom) {
@@ -152,7 +152,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('updateJoinInfo', ({ roomCode, playerName, playerColor, privateRoom }) => {
-        // We don't update the lobby here anymore
+       
     });
 
    
