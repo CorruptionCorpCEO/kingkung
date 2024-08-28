@@ -108,7 +108,7 @@ const gameModule = (function () {
         }
     }
 
-    
+
 
     function removePotentialMoves() {
         document.querySelectorAll('.potential-move').forEach(el => el.remove());
