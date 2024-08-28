@@ -11,34 +11,60 @@ const COLOR_HUE_THRESHOLD = 25;
 app.use(express.static(path.join(__dirname, 'public')));
 
 const rooms = new Map();
+const publicRooms = new Map();
 
 io.on('connection', (socket) => {
+    socket.on('joinRoom', ({ roomCode, playerName, playerColor, privateRoom }) => {
+        let room = rooms.get(roomCode);
 
-    socket.on('validateColor', ({ roomCode, playerColor }) => {
-        const room = rooms.get(roomCode);
-        if (room && room.players.length > 0) {
+        // Check if trying to join an existing public room as private
+        if (room && !room.private && privateRoom) {
+            socket.emit('joinRoomResponse', {
+                success: false,
+                message: 'This room code is already in use for a public room. Please choose a different code for your private room.',
+                errorType: 'privateRoomError'
+            });
+            return;
+        }
+
+        if (room && room.players.length === 1) {
             const otherPlayer = room.players[0];
             const otherPlayerHue = hexToHsl(otherPlayer.color).h;
-            const hueDifference = Math.abs(playerColor - otherPlayerHue);
-            const isValid = hueDifference > COLOR_HUE_THRESHOLD && hueDifference < (360 - COLOR_HUE_THRESHOLD);
-            socket.emit('colorValidation', { valid: isValid });
-        } else {
-            socket.emit('colorValidation', { valid: true });
-        }
-    });
+            const newPlayerHue = hexToHsl(playerColor).h;
+            const hueDifference = Math.abs(newPlayerHue - otherPlayerHue);
+            const isValidColor = hueDifference > COLOR_HUE_THRESHOLD && hueDifference < (360 - COLOR_HUE_THRESHOLD);
 
-    socket.on('joinRoom', ({ roomCode, playerName, playerColor }) => {
-        let room = rooms.get(roomCode);
+            if (!isValidColor) {
+                socket.emit('joinRoomResponse', {
+                    success: false,
+                    message: 'Color too similar to other player. Please choose a different color.',
+                    errorType: 'colorError'
+                });
+                return;
+            }
+        }
 
         if (!room) {
             room = {
                 roomCode,
                 players: [],
                 gameState: createInitialGameState(),
-                lastWinner: null
+                lastWinner: null,
+                private: privateRoom
             };
             rooms.set(roomCode, room);
             console.log(`Room ${roomCode} created`);
+
+            // Add to public rooms if it's not private
+            if (!privateRoom) {
+                const roomInfo = {
+                    roomCode,
+                    playerName,
+                    playerColor
+                };
+                publicRooms.set(roomCode, roomInfo);
+                io.emit('lobbyUpdate', Array.from(publicRooms.values()));
+            }
         }
 
         if (room.players.length >= 2) {
@@ -56,10 +82,82 @@ io.on('connection', (socket) => {
         socket.emit('joinRoomResponse', { success: true, message: 'Joined room successfully', player });
 
         if (room.players.length === 2) {
+            publicRooms.delete(roomCode);
+            io.emit('lobbyUpdate', Array.from(publicRooms.values()));
             determineStartingPlayer(room);
             io.to(roomCode).emit('gameStart', { players: room.players, gameState: room.gameState });
         }
     });
+
+    socket.on('disconnect', () => {
+        for (const [roomCode, room] of rooms.entries()) {
+            const playerIndex = room.players.findIndex(p => p.id === socket.id);
+            if (playerIndex !== -1) {
+                const disconnectedPlayer = room.players[playerIndex];
+                room.players.splice(playerIndex, 1);
+                console.log(`Player ${disconnectedPlayer.name} disconnected from room ${roomCode}`);
+
+                if (room.players.length === 0) {
+                    rooms.delete(roomCode);
+                    publicRooms.delete(roomCode);
+                    console.log(`Room ${roomCode} deleted as it's empty`);
+                } else if (room.players.length === 1) {
+                    // Update the room with the remaining player as the new host
+                    const remainingPlayer = room.players[0];
+                    remainingPlayer.role = 'host';
+                    room.gameState = createInitialGameState();
+
+                    // Add or update the room in the public rooms list if it's not private
+                    if (!room.private) {
+                        const roomInfo = {
+                            roomCode,
+                            playerName: remainingPlayer.name,
+                            playerColor: remainingPlayer.color
+                        };
+                        publicRooms.set(roomCode, roomInfo);
+                    }
+
+                    io.to(roomCode).emit('playerDisconnected', { players: room.players, gameState: room.gameState });
+                }
+
+                io.emit('lobbyUpdate', Array.from(publicRooms.values()));
+                break;
+            }
+        }
+    });
+
+    socket.on('requestLobbyUpdate', () => {
+        socket.emit('lobbyUpdate', Array.from(publicRooms.values()));
+    });
+    socket.on('updateLobby', ({ roomCode, playerName, playerColor, privateRoom }) => {
+        if (!privateRoom) {
+            const roomInfo = { roomCode, playerName, playerColor };
+            publicRooms.set(roomCode, roomInfo);
+            io.emit('lobbyUpdate', Array.from(publicRooms.values()));
+        }
+    });
+
+    socket.on('validateColor', ({ roomCode, playerColor }) => {
+        const room = rooms.get(roomCode);
+        if (room && room.players.length > 0) {
+            const otherPlayer = room.players[0];
+            const otherPlayerHue = hexToHsl(otherPlayer.color).h;
+            const newPlayerHue = hexToHsl(playerColor).h;
+            const hueDifference = Math.abs(newPlayerHue - otherPlayerHue);
+            const isValid = hueDifference > COLOR_HUE_THRESHOLD && hueDifference < (360 - COLOR_HUE_THRESHOLD);
+            socket.emit('colorValidation', { valid: isValid });
+        } else {
+            socket.emit('colorValidation', { valid: true });
+        }
+    });
+
+    socket.on('updateJoinInfo', ({ roomCode, playerName, playerColor, privateRoom }) => {
+        // We don't update the lobby here anymore
+    });
+
+   
+
+ 
 
     socket.on('requestGameState', () => {
         const room = getRoomForSocket(socket);
@@ -150,26 +248,7 @@ io.on('connection', (socket) => {
         }
     });
 
-    socket.on('disconnect', () => {
-        for (const [roomCode, room] of rooms.entries()) {
-            const playerIndex = room.players.findIndex(p => p.id === socket.id);
-            if (playerIndex !== -1) {
-                const disconnectedPlayer = room.players[playerIndex];
-                room.players.splice(playerIndex, 1);
-                console.log(`Player ${disconnectedPlayer.name} disconnected from room ${roomCode}`);
-
-                if (room.players.length === 0) {
-                    rooms.delete(roomCode);
-                    console.log(`Room ${roomCode} deleted as it's empty`);
-                } else if (room.players.length === 1) {
-                    room.gameState = createInitialGameState();
-                    room.players[0].role = 'host';
-                    io.to(roomCode).emit('playerDisconnected', { players: room.players, gameState: room.gameState });
-                }
-                break;
-            }
-        }
-    });
+   
 });
 
 function hexToHsl(hex) {
