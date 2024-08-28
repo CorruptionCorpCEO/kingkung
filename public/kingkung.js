@@ -37,11 +37,11 @@ const gameModule = (function () {
             const playPromise = sounds[soundName].play();
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
-                    console.error(`Error playing sound ${soundName}:`, error);
+
                 });
             }
         } else {
-            console.error(`Sound ${soundName} not found`);
+
         }
     }
 
@@ -82,7 +82,6 @@ const gameModule = (function () {
 
     function handleCellClick(event) {
         if (!currentPlayer || currentPlayer.role !== myRole) {
-            console.log("Not your turn or game not fully initialized yet");
             return;
         }
 
@@ -136,7 +135,6 @@ const gameModule = (function () {
 
     function handleMove(targetCell, isSwap) {
         if (!selectedChipCoords) {
-            console.error('Attempted to move without a selected chip');
             return;
         }
 
@@ -144,7 +142,6 @@ const gameModule = (function () {
         const targetCol = parseInt(targetCell.dataset.col);
 
         if (isNaN(targetRow) || isNaN(targetCol)) {
-            console.error('Invalid target cell coordinates');
             return;
         }
 
@@ -161,7 +158,6 @@ const gameModule = (function () {
 
     function updateGameState(gameState) {
         if (!gameState || !gameState.board) {
-            console.error('Invalid game state received:', gameState);
             return;
         }
 
@@ -284,7 +280,7 @@ const gameModule = (function () {
             chip.style.backgroundColor = player.color;
             chip.style.borderColor = player.color;
         } else {
-            console.error(`Player not found for role: ${cellData.role}`);
+
         }
         return chip;
     }
@@ -292,7 +288,6 @@ const gameModule = (function () {
     function updateCurrentPlayer(currentPlayerData) {
         currentPlayer = players.find(p => p.role === currentPlayerData.role);
         if (!currentPlayer) {
-            console.error('Current player not found in players array');
         }
     }
 
@@ -384,7 +379,6 @@ const gameModule = (function () {
         });
 
         socket.on('invalidMove', () => {
-            console.log('Invalid move attempted');
             deselectChip();
         });
 
@@ -394,7 +388,7 @@ const gameModule = (function () {
             if (winNotification) {
                 winNotification.remove();
             }
-            console.log('Game has been reset');
+
         });
 
         socket.emit('requestGameState');
