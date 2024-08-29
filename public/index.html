@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta property="og:title" content="King Kung">
-    <meta property="og:description" content="A Connect 4 Style 1v1 Board Game">
+    <meta property="og:description" content="A Chess / Connect 4 Hybrid">
     <meta property="og:image" content="https://king-kung.com/assets/social-share.png">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -12,8 +12,7 @@
     <meta property="og:type" content="website">
     <style>
 
-        body {
-            font-family: Arial, sans-serif;
+        body { 
             background-color: var(--main-bg-color);
             background-image: url('assets/background-tile.png');
             background-repeat: repeat;
@@ -25,6 +24,17 @@
             align-items: center;
             min-height: 100vh;
             color: var(--text-color);
+        }
+
+        @font-face {
+            font-family: 'SuperBrain';
+            src: url('fonts/SuperBrain.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+
+        * {
+            font-family: 'SuperBrain', sans-serif;
         }
 
         #loadingScreen {
@@ -46,6 +56,79 @@
                 max-height: 80%;
             }
 
+        .carousel-container {
+            border: 3px solid white;
+            position: relative;
+            width: 100%;
+            height: 80vh;
+            overflow: hidden;
+        }
+
+        .carousel-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+           
+        }
+
+            .carousel-slide.active {
+                opacity: 1;
+            }
+
+            .carousel-slide img {
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+            }
+
+        .slide-description {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 20px;
+        }
+
+            .slide-description h3 {
+                margin-top: 0;
+            }
+
+        .carousel-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 24px;
+            z-index: 1;
+            transition: background-color 0.3s, opacity 0.3s;
+        }
+
+            .carousel-button:hover:not(:disabled) {
+                background-color: rgba(0, 0, 0, 0.8);
+            }
+
+            .carousel-button:disabled {
+                opacity: 0.3;
+                cursor: not-allowed;
+            }
+
+            .carousel-button.prev {
+                left: 10px;
+            }
+
+            .carousel-button.next {
+                right: 10px;
+            }
+
         .modal {
             display: none;
             position: fixed;
@@ -55,16 +138,17 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0,0,0,0.4);
+            background-color: rgba(0, 0, 0, 0.8);
         }
 
         .modal-content {
-            background-color: black;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 500px;
+            position: relative;
+            background-color: #1a1a1a;
+            margin: 5% auto;
+            padding: 0;
+            width: 90%;
+            max-width: 800px;
+            box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
         }
 
         .join-form {
@@ -331,19 +415,25 @@
         <div id="rulesModal" class="modal">
             <div class="modal-content">
                 <span class="close">&times;</span>
-                <h2>Game Rules</h2>
-                <h3>Chip Selection and Movement:</h3>
-                <ul>
-                    <li>Players take turns moving their chips, which can move one space in any direction (vertically, horizontally, or diagonally) similar to a king in chess.</li>
-                    <li>The board in King Kung wraps around, allowing chips to be moved past one side of the board and spit out the other.</li>
-                    <li>A chip can only move to a space if it is not occupied by another chip.</li>
-                    <li>On their turn, a player clicks on one of their chips to see potential moves, highlighted with semi-transparent circles.</li>
-                    <li>Clicking on a highlighted potential move space moves the chip to that space.</li>
-                </ul>
-                <h3>Chip Swapping Mechanic:</h3>
-                <p>If a chip is adjacent to two enemy chips vertically or horizontally, it can swap places with one of those enemy chips. Swapping chips cannot be undone immediately; players cannot move back to the original position if it would undo a swap.</p>
-                <h3>Winning the Game:</h3>
-                <p>A player wins by lining up all four of their chips in a vertical, horizontal or diagonal line. Upon winning, a notification displays the winner, the game is reset, and the winner's score is incremented.</p>
+                <div class="carousel-container">
+                    <div class="carousel-slide">
+                        <img src="assets/rules1.png" alt="Rules 1">
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="assets/rules2.png" alt="Rules 2">
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="assets/rules3.png" alt="Rules 3">
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="assets/rules4.png" alt="Rules 4">
+                    </div>
+                    <div class="carousel-slide">
+                        <img src="assets/rules5.png" alt="Rules 5">
+                    </div>
+                </div>
+                <button class="carousel-button prev">&lt;</button>
+                <button class="carousel-button next">&gt;</button>
             </div>
         </div>
 
