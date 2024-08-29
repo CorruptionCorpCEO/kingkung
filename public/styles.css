@@ -246,16 +246,16 @@ label[for="privateRoom"] {
     .modal-content {
         width: 95%;
         margin: 2% auto;
-      }
-    
-      .carousel-container {
+    }
+
+    .carousel-container {
         height: 90vh;
-      }
-    
-      .carousel-button {
+    }
+
+    .carousel-button {
         padding: 10px 15px;
         font-size: 18px;
-      }
+    }
 
 
     #gameBoard {
