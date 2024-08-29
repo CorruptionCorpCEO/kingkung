@@ -243,6 +243,19 @@ label[for="privateRoom"] {
         margin-bottom: 10px;
     }
 
+    .modal-content {
+        width: 95%;
+        margin: 2% auto;
+      }
+    
+      .carousel-container {
+        height: 90vh;
+      }
+    
+      .carousel-button {
+        padding: 10px 15px;
+        font-size: 18px;
+      }
 
 
     #gameBoard {
