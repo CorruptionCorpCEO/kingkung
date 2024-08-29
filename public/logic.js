@@ -477,13 +477,61 @@ function initializeRulesModal() {
     const rulesButton = document.getElementById('rulesButton');
     const rulesModal = document.getElementById('rulesModal');
     const closeBtn = rulesModal.querySelector('.close');
+    const prevBtn = rulesModal.querySelector('.carousel-button.prev');
+    const nextBtn = rulesModal.querySelector('.carousel-button.next');
+    const slides = rulesModal.querySelectorAll('.carousel-slide');
+    let currentSlide = 0;
+
+    function showSlide(index) {
+        slides.forEach((slide, i) => {
+            slide.classList.toggle('active', i === index);
+        });
+        updateButtons();
+    }
+
+    function updateButtons() {
+        prevBtn.disabled = currentSlide === 0;
+        nextBtn.disabled = currentSlide === slides.length - 1;
+    }
+
+    function nextSlide() {
+        if (currentSlide < slides.length - 1) {
+            currentSlide++;
+            showSlide(currentSlide);
+        }
+    }
+
+    function prevSlide() {
+        if (currentSlide > 0) {
+            currentSlide--;
+            showSlide(currentSlide);
+        }
+    }
 
     rulesButton.addEventListener('click', () => {
         rulesModal.style.display = 'block';
+        currentSlide = 0;
+        showSlide(currentSlide);
     });
 
     closeBtn.addEventListener('click', () => {
         rulesModal.style.display = 'none';
+    });
+
+    prevBtn.addEventListener('click', prevSlide);
+    nextBtn.addEventListener('click', nextSlide);
+
+    // Add keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (rulesModal.style.display === 'block') {
+            if (e.key === 'ArrowLeft') {
+                prevSlide();
+            } else if (e.key === 'ArrowRight') {
+                nextSlide();
+            } else if (e.key === 'Escape') {
+                rulesModal.style.display = 'none';
+            }
+        }
     });
 
     window.addEventListener('click', (event) => {
