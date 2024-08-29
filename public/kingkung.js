@@ -314,11 +314,11 @@ const gameModule = (function () {
 
         if (hostDisplay) {
             const hostScore = hostDisplay.querySelector('.player-score');
-            if (hostScore) hostScore.textContent = `${scores.host}`;
+            if (hostScore) hostScore.textContent = `: ${scores.host}`;
         }
         if (oppDisplay) {
             const oppScore = oppDisplay.querySelector('.player-score');
-            if (oppScore) oppScore.textContent = `${scores.opp}`;
+            if (oppScore) oppScore.textContent = `: ${scores.opp}`;
         }
     }
 
