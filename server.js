@@ -53,7 +53,7 @@ io.on('connection', (socket) => {
                 private: privateRoom
             };
             rooms.set(roomCode, room);
-            
+
 
             // Add to public rooms if it's not private
             if (!privateRoom) {
@@ -152,12 +152,12 @@ io.on('connection', (socket) => {
     });
 
     socket.on('updateJoinInfo', ({ roomCode, playerName, playerColor, privateRoom }) => {
-       
+
     });
 
-   
 
- 
+
+
 
     socket.on('requestGameState', () => {
         const room = getRoomForSocket(socket);
@@ -248,7 +248,7 @@ io.on('connection', (socket) => {
         }
     });
 
-   
+
 });
 
 function hexToHsl(hex) {
@@ -318,6 +318,37 @@ function getPlayerRole(socket) {
     return null;
 }
 
+function calculatePotentialMoves(gameState, row, col) {
+    const potentialMoves = [];
+    const directions = [
+        [-1, 0], [1, 0], [0, -1], [0, 1],
+        [-1, -1], [-1, 1], [1, -1], [1, 1]
+    ];
+
+    const sourceChip = gameState.board[row][col];
+    if (!sourceChip) return potentialMoves;
+
+    const isSwappable = gameState.swappableChips.some(chip => chip.row === row && chip.col === col);
+
+    directions.forEach(([dx, dy]) => {
+        const newRow = (row + dx + 4) % 4;
+        const newCol = (col + dy + 4) % 4;
+        const targetChip = gameState.board[newRow][newCol];
+
+        if (targetChip && targetChip.role !== sourceChip.role) {
+            if (isSwappable && (dx === 0 || dy === 0)) {
+                if (!isPreviousSwap(gameState, row, col, newRow, newCol)) {
+                    potentialMoves.push({ row: newRow, col: newCol, isSwap: true });
+                }
+            }
+        } else if (!targetChip && sourceChip.role === gameState.currentPlayer.role) {
+            potentialMoves.push({ row: newRow, col: newCol, isSwap: false });
+        }
+    });
+
+    return potentialMoves;
+}
+
 function canSwap(gameState, row, col) {
     const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
     let adjacentEnemyCount = 0;
@@ -335,67 +366,20 @@ function canSwap(gameState, row, col) {
         }
     }
 
-    // A chip can be swapped if it's surrounded by 2 or more enemy chips
-    // OR if it's an enemy chip adjacent to a player's chip that's surrounded
-    return adjacentEnemyCount >= 2 || (adjacentEnemyCount > 0 && isAdjacentToSurroundedChip(gameState, row, col, chip.role));
+    return adjacentEnemyCount >= 2;
 }
 
-function isAdjacentToSurroundedChip(gameState, row, col, role) {
-    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-
-    for (const [dx, dy] of directions) {
-        const adjRow = (row + dx + 4) % 4;
-        const adjCol = (col + dy + 4) % 4;
-        const adjacentChip = gameState.board[adjRow][adjCol];
-
-        if (adjacentChip && adjacentChip.role !== role) {
-            // Check if this adjacent enemy chip is surrounded
-            let surroundingEnemyCount = 0;
-            for (const [dx2, dy2] of directions) {
-                const surroundingRow = (adjRow + dx2 + 4) % 4;
-                const surroundingCol = (adjCol + dy2 + 4) % 4;
-                const surroundingChip = gameState.board[surroundingRow][surroundingCol];
-
-                if (surroundingChip && surroundingChip.role === role) {
-                    surroundingEnemyCount++;
-                }
-            }
-
-            if (surroundingEnemyCount >= 2) {
-                return true;
-            }
-        }
+function isPreviousSwap(gameState, sourceRow, sourceCol, targetRow, targetCol) {
+    if (gameState.lastSwap &&
+        gameState.lastSwap.currentPlayerRole !== gameState.currentPlayer.role) {
+        return (
+            (gameState.lastSwap.sourceRow === targetRow && gameState.lastSwap.sourceCol === targetCol &&
+                gameState.lastSwap.targetRow === sourceRow && gameState.lastSwap.targetCol === sourceCol) ||
+            (gameState.lastSwap.sourceRow === sourceRow && gameState.lastSwap.sourceCol === sourceCol &&
+                gameState.lastSwap.targetRow === targetRow && gameState.lastSwap.targetCol === targetCol)
+        );
     }
-
     return false;
-}
-
-function calculatePotentialMoves(gameState, row, col) {
-    const potentialMoves = [];
-    const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]]; // Only orthogonal directions
-
-    const sourceChip = gameState.board[row][col];
-    if (!sourceChip) return potentialMoves;
-
-    const isSourceSwappable = gameState.swappableChips.some(chip => chip.row === row && chip.col === col);
-
-    directions.forEach(([dx, dy]) => {
-        const newRow = (row + dx + 4) % 4;
-        const newCol = (col + dy + 4) % 4;
-        const targetChip = gameState.board[newRow][newCol];
-
-        if (targetChip && targetChip.role !== sourceChip.role) {
-            if (isSourceSwappable || canSwap(gameState, newRow, newCol)) {
-                if (!isPreviousSwap(gameState, row, col, newRow, newCol)) {
-                    potentialMoves.push({ row: newRow, col: newCol, isSwap: true });
-                }
-            }
-        } else if (!targetChip && sourceChip.role === gameState.currentPlayer.role) {
-            potentialMoves.push({ row: newRow, col: newCol, isSwap: false });
-        }
-    });
-
-    return potentialMoves;
 }
 
 function isValidMove(gameState, sourceRow, sourceCol, targetRow, targetCol, isSwap) {
@@ -404,11 +388,10 @@ function isValidMove(gameState, sourceRow, sourceCol, targetRow, targetCol, isSw
         return false;
     }
 
-    const rowDiff = Math.abs((targetRow - sourceRow + 4) % 4);
-    const colDiff = Math.abs((targetCol - sourceCol + 4) % 4);
+    const rowDiff = (targetRow - sourceRow + 4) % 4;
+    const colDiff = (targetCol - sourceCol + 4) % 4;
 
-    // Ensure the move is only one step and not diagonal
-    const isAdjacentMove = (rowDiff === 1 && colDiff === 0) || (rowDiff === 0 && colDiff === 1);
+    const isAdjacentMove = (rowDiff <= 1 || rowDiff === 3) && (colDiff <= 1 || colDiff === 3) && !(rowDiff === 0 && colDiff === 0);
 
     if (!isAdjacentMove) {
         return false;
@@ -421,9 +404,12 @@ function isValidMove(gameState, sourceRow, sourceCol, targetRow, targetCol, isSw
             return false;
         }
 
+        if (rowDiff !== 0 && colDiff !== 0) {
+            return false;
+        }
+
         const isSourceSwappable = gameState.swappableChips.some(chip => chip.row === sourceRow && chip.col === sourceCol);
-        const isTargetSwappable = canSwap(gameState, targetRow, targetCol);
-        if (!isSourceSwappable && !isTargetSwappable) {
+        if (!isSourceSwappable) {
             return false;
         }
 
@@ -442,21 +428,6 @@ function isValidMove(gameState, sourceRow, sourceCol, targetRow, targetCol, isSw
     return true;
 }
 
-function isPreviousSwap(gameState, sourceRow, sourceCol, targetRow, targetCol) {
-    if (gameState.lastSwap &&
-        gameState.lastSwap.currentPlayerRole !== gameState.currentPlayer.role) {
-        return (
-            (gameState.lastSwap.sourceRow === targetRow && gameState.lastSwap.sourceCol === targetCol &&
-                gameState.lastSwap.targetRow === sourceRow && gameState.lastSwap.targetCol === sourceCol) ||
-            (gameState.lastSwap.sourceRow === sourceRow && gameState.lastSwap.sourceCol === sourceCol &&
-                gameState.lastSwap.targetRow === targetRow && gameState.lastSwap.targetCol === targetCol)
-        );
-    }
-    return false;
-}
-
-
-
 function performMove(gameState, sourceRow, sourceCol, targetRow, targetCol, isSwap) {
     if (isSwap) {
         const temp = gameState.board[sourceRow][sourceCol];
@@ -473,36 +444,11 @@ function performMove(gameState, sourceRow, sourceCol, targetRow, targetCol, isSw
     } else {
         gameState.board[targetRow][targetCol] = gameState.board[sourceRow][sourceCol];
         gameState.board[sourceRow][sourceCol] = null;
-    }
-
-    // Clear lastSwap if it's not a swap move
-    if (!isSwap) {
         gameState.lastSwap = null;
     }
 
     // Recalculate swappable chips
     updateSwappableChips(gameState);
-}
-
-function switchTurn(room) {
-    room.gameState.currentPlayer = room.players.find(p => p.role !== room.gameState.currentPlayer.role);
-    room.gameState.selectedChip = null;
-    room.gameState.potentialMoves = null;
-
-    // Clear lastSwap when switching turns
-    room.gameState.lastSwap = null;
-}
-
-function isPreviousSwap(gameState, sourceRow, sourceCol, targetRow, targetCol) {
-    if (gameState.lastSwap) {
-        return (
-            (gameState.lastSwap.sourceRow === targetRow && gameState.lastSwap.sourceCol === targetCol &&
-                gameState.lastSwap.targetRow === sourceRow && gameState.lastSwap.targetCol === sourceCol) ||
-            (gameState.lastSwap.sourceRow === sourceRow && gameState.lastSwap.sourceCol === sourceCol &&
-                gameState.lastSwap.targetRow === targetRow && gameState.lastSwap.targetCol === targetCol)
-        );
-    }
-    return false;
 }
 
 function updateSwappableChips(gameState) {
